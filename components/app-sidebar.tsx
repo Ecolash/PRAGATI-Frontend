@@ -27,7 +27,7 @@ interface StreamlinedSidebarProps {
   onSelectAgentAction: (agentId: string) => void;
 }
 
-export function StreamlinedSidebar({
+export function AppSidebar({
   chatSessions,
   currentSessionId,
   onNewChatAction,

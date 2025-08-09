@@ -7,16 +7,16 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
-import { StreamlinedSidebar } from "./components/streamlined-sidebar";
-import { ChatMessages } from "./components/enhanced-chat-messages";
-import { CleanChatInput } from "./components/clean-chat-input";
-import { CropYieldInterface } from "./components/agent-interfaces/crop-yield-interface";
-import { WeatherAdvisoryInterface } from "./components/agent-interfaces/weather-advisory-interface";
-import { CropRecommendationsInterface } from "./components/agent-interfaces/crop-recommendations-interface";
-import { CropHealthInterface } from "./components/agent-interfaces/crop-health-interface";
-import { MarketPricesInterface } from "./components/agent-interfaces/market-prices-interface";
-import { ChatSession, ChatMessage, Language } from "./types/agriculture";
-import { agricultureAgents } from "./data/agents";
+import { AppSidebar } from "./app-sidebar";
+import { ChatMessages } from "./chat-messages";
+import { ChatInput } from "./chat-input";
+import { CropYieldInterface } from "./agent-interfaces/crop-yield-interface";
+import { WeatherAdvisoryInterface } from "./agent-interfaces/weather-advisory-interface";
+import { CropRecommendationsInterface } from "./agent-interfaces/crop-recommendations-interface";
+import { CropHealthInterface } from "./agent-interfaces/crop-health-interface";
+import { MarketPricesInterface } from "./agent-interfaces/market-prices-interface";
+import { ChatSession, ChatMessage, Language } from "@/types/agriculture";
+import { agricultureAgents } from "@/data/agents";
 
 export default function AgriculturalAIChatbot() {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -195,7 +195,7 @@ export default function AgriculturalAIChatbot() {
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full bg-gray-50">
-        <StreamlinedSidebar
+        <AppSidebar
           chatSessions={chatSessions}
           currentSessionId={currentSessionId}
           onNewChatAction={createNewChat}
@@ -239,7 +239,7 @@ export default function AgriculturalAIChatbot() {
               isLoading={isLoading}
               onTranslateActionMessageAction={translateMessage}
             />
-            <CleanChatInput
+            <ChatInput
               onSendMessageAction={sendMessage}
               onLanguageChangeAction={handleLanguageChange}
               selectedLanguage={selectedLanguage}

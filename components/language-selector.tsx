@@ -17,7 +17,7 @@ interface SimpleLanguageSelectorProps {
   compact?: boolean;
 }
 
-export function SimpleLanguageSelector({
+export function LanguageSelector({
   selectedLanguage,
   onLanguageChangeAction,
   compact = false,
