@@ -1,0 +1,81 @@
+import { Language } from "@/types/agriculture";
+
+export const supportedLanguages: Language[] = [
+  {
+    code: "en",
+    name: "English",
+    nativeName: "English",
+    flag: "🇺🇸",
+    voiceCode: "en-US",
+  },
+  {
+    code: "hi",
+    name: "Hindi",
+    nativeName: "हिन्दी",
+    flag: "🇮🇳",
+    voiceCode: "hi-IN",
+  },
+  {
+    code: "bn",
+    name: "Bengali",
+    nativeName: "বাংলা",
+    flag: "🇮🇳",
+    voiceCode: "bn-IN",
+  },
+  {
+    code: "te",
+    name: "Telugu",
+    nativeName: "తెలుగు",
+    flag: "🇮🇳",
+    voiceCode: "te-IN",
+  },
+  {
+    code: "ta",
+    name: "Tamil",
+    nativeName: "தமிழ்",
+    flag: "🇮🇳",
+    voiceCode: "ta-IN",
+  },
+  {
+    code: "mr",
+    name: "Marathi",
+    nativeName: "मराठी",
+    flag: "🇮🇳",
+    voiceCode: "mr-IN",
+  },
+  {
+    code: "gu",
+    name: "Gujarati",
+    nativeName: "ગુજરાતી",
+    flag: "🇮🇳",
+    voiceCode: "gu-IN",
+  },
+  {
+    code: "kn",
+    name: "Kannada",
+    nativeName: "ಕನ್ನಡ",
+    flag: "🇮🇳",
+    voiceCode: "kn-IN",
+  },
+  {
+    code: "ml",
+    name: "Malayalam",
+    nativeName: "മലയാളം",
+    flag: "🇮🇳",
+    voiceCode: "ml-IN",
+  },
+  {
+    code: "pa",
+    name: "Punjabi",
+    nativeName: "ਪੰਜਾਬੀ",
+    flag: "🇮🇳",
+    voiceCode: "pa-IN",
+  },
+  {
+    code: "or",
+    name: "Odia",
+    nativeName: "ଓଡ଼ିଆ",
+    flag: "🇮🇳",
+    voiceCode: "or-IN",
+  },
+];

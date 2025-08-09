@@ -1,0 +1,258 @@
+"use client";
+
+import { useState, useCallback } from "react";
+import {
+  SidebarProvider,
+  SidebarInset,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
+import { StreamlinedSidebar } from "./components/streamlined-sidebar";
+import { ChatMessages } from "./components/enhanced-chat-messages";
+import { CleanChatInput } from "./components/clean-chat-input";
+import { CropYieldInterface } from "./components/agent-interfaces/crop-yield-interface";
+import { WeatherAdvisoryInterface } from "./components/agent-interfaces/weather-advisory-interface";
+import { CropRecommendationsInterface } from "./components/agent-interfaces/crop-recommendations-interface";
+import { CropHealthInterface } from "./components/agent-interfaces/crop-health-interface";
+import { MarketPricesInterface } from "./components/agent-interfaces/market-prices-interface";
+import { ChatSession, ChatMessage, Language } from "./types/agriculture";
+import { agricultureAgents } from "./data/agents";
+
+export default function AgriculturalAIChatbot() {
+  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string>();
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
+
+  const currentSession = chatSessions.find(
+    (session) => session.id === currentSessionId,
+  );
+
+  const createNewChat = useCallback(() => {
+    const newSession: ChatSession = {
+      id: Date.now().toString(),
+      title: "New Chat",
+      messages: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      language: selectedLanguage,
+    };
+    setChatSessions((prev) => [newSession, ...prev]);
+    setCurrentSessionId(newSession.id);
+  }, [selectedLanguage]);
+
+  const selectSession = useCallback((sessionId: string) => {
+    setCurrentSessionId(sessionId);
+  }, []);
+
+  const selectAgent = useCallback(
+    (agentId: string) => {
+      const agent = agricultureAgents.find((a) => a.id === agentId);
+      if (agent) {
+        const newSession: ChatSession = {
+          id: Date.now().toString(),
+          title: agent.name,
+          messages: [
+            {
+              id: Date.now().toString(),
+              role: "assistant",
+              content: `Hello! I'm your ${agent.name} specialist. ${agent.description}. How can I help you today?`,
+              timestamp: new Date(),
+              language: selectedLanguage,
+            },
+          ],
+          agent,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          language: selectedLanguage,
+        };
+        setChatSessions((prev) => [newSession, ...prev]);
+        setCurrentSessionId(newSession.id);
+      }
+    },
+    [selectedLanguage],
+  );
+
+  const handleLanguageChange = useCallback((language: Language) => {
+    setSelectedLanguage(language.code);
+  }, []);
+
+  const translateMessage = useCallback(
+    async (messageId: string, targetLanguage: string) => {
+      setChatSessions((prev) =>
+        prev.map((session) =>
+          session.id === currentSessionId
+            ? {
+                ...session,
+                messages: session.messages.map((msg) =>
+                  msg.id === messageId
+                    ? {
+                        ...msg,
+                        translations: {
+                          ...msg.translations,
+                          [targetLanguage]: `[Translated] ${msg.content}`,
+                        },
+                      }
+                    : msg,
+                ),
+              }
+            : session,
+        ),
+      );
+    },
+    [currentSessionId],
+  );
+
+  const sendMessage = useCallback(
+    async (content: string, files?: File[]) => {
+      if (!currentSessionId) {
+        createNewChat();
+        return;
+      }
+
+      const userMessage: ChatMessage = {
+        id: Date.now().toString(),
+        role: "user",
+        content,
+        timestamp: new Date(),
+        language: selectedLanguage,
+        attachments: files?.map((file) => ({
+          id: Date.now().toString() + Math.random(),
+          name: file.name,
+          type: file.type.startsWith("image/") ? "image" : "pdf",
+          url: URL.createObjectURL(file),
+          size: file.size,
+        })),
+      };
+
+      setChatSessions((prev) =>
+        prev.map((session) =>
+          session.id === currentSessionId
+            ? {
+                ...session,
+                messages: [...session.messages, userMessage],
+                title:
+                  session.messages.length === 0
+                    ? content.slice(0, 40) + "..."
+                    : session.title,
+                updatedAt: new Date(),
+              }
+            : session,
+        ),
+      );
+
+      setIsLoading(true);
+
+      setTimeout(() => {
+        const assistantMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: `Thank you for your question about "${content}". As your agricultural AI assistant, I'm here to help with farming insights and recommendations. How else can I assist you?`,
+          timestamp: new Date(),
+          language: selectedLanguage,
+        };
+
+        setChatSessions((prev) =>
+          prev.map((session) =>
+            session.id === currentSessionId
+              ? {
+                  ...session,
+                  messages: [...session.messages, assistantMessage],
+                  updatedAt: new Date(),
+                }
+              : session,
+          ),
+        );
+        setIsLoading(false);
+      }, 1500);
+    },
+    [currentSessionId, createNewChat, selectedLanguage],
+  );
+
+  const renderAgentInterface = () => {
+    if (!currentSession?.agent) return null;
+
+    switch (currentSession.agent.id) {
+      case "crop-yield":
+        return <CropYieldInterface />;
+      case "weather-advisory":
+        return <WeatherAdvisoryInterface />;
+      case "crop-recommendations":
+        return <CropRecommendationsInterface />;
+      case "crop-health":
+        return <CropHealthInterface />;
+      case "market-prices":
+        return <MarketPricesInterface />;
+      default:
+        return null;
+    }
+  };
+
+  if (chatSessions.length === 0 && !currentSessionId) {
+    createNewChat();
+  }
+
+  return (
+    <SidebarProvider>
+      <div className="flex h-screen w-full bg-gray-50">
+        <StreamlinedSidebar
+          chatSessions={chatSessions}
+          currentSessionId={currentSessionId}
+          onNewChatAction={createNewChat}
+          onSelectSessionAction={selectSession}
+          onSelectAgentAction={selectAgent}
+        />
+        <SidebarInset className="flex flex-col">
+          <header className="flex h-14 shrink-0 items-center gap-2 border-b border-gray-200 px-4 bg-white">
+            <SidebarTrigger className="-ml-1 text-gray-600 hover:bg-gray-100" />
+            <Separator
+              orientation="vertical"
+              className="mr-2 h-4 bg-gray-300"
+            />
+            <div className="flex items-center gap-2">
+              {currentSession?.agent ? (
+                <>
+                  <div className={`${currentSession.agent.color}`}>
+                    {currentSession.agent.icon}
+                  </div>
+                  <h1 className="font-semibold text-gray-900">
+                    {currentSession.agent.name}
+                  </h1>
+                </>
+              ) : (
+                <>
+                  <div className="h-5 w-5 rounded bg-emerald-100 flex items-center justify-center">
+                    <span className="text-xs">🌾</span>
+                  </div>
+                  <h1 className="font-semibold text-gray-900">
+                    AgriAI Assistant
+                  </h1>
+                </>
+              )}
+            </div>
+          </header>
+
+          <div className="flex flex-col flex-1 min-h-0">
+            {renderAgentInterface()}
+            <ChatMessages
+              messages={currentSession?.messages || []}
+              isLoading={isLoading}
+              onTranslateActionMessageAction={translateMessage}
+            />
+            <CleanChatInput
+              onSendMessageAction={sendMessage}
+              onLanguageChangeAction={handleLanguageChange}
+              selectedLanguage={selectedLanguage}
+              disabled={isLoading}
+              placeholder={
+                currentSession?.agent
+                  ? `Ask about ${currentSession.agent.name.toLowerCase()}...`
+                  : "Message AgriAI..."
+              }
+            />
+          </div>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
+  );
+}
