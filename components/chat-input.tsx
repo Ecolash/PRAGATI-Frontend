@@ -26,7 +26,7 @@ export function ChatInput({
   onLanguageChangeAction,
   selectedLanguage,
   disabled = false,
-  placeholder = "Message AgriAI...",
+  placeholder = "Message PRAGATI...",
 }: CleanChatInputProps) {
   const [message, setMessage] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -256,7 +256,7 @@ export function ChatInput({
         </div>
 
         <div className="mt-2 text-xs text-gray-500 text-center">
-          AgriAI can make mistakes. Please verify important information.
+          PRAGATI can make mistakes. Please verify important information.
         </div>
       </div>
     </div>

@@ -225,7 +225,7 @@ export default function AgriculturalAIChatbot() {
                     <span className="text-xs">🌾</span>
                   </div>
                   <h1 className="font-semibold text-gray-900">
-                    AgriAI Assistant
+                    PRAGATI Assistant
                   </h1>
                 </>
               )}
@@ -247,7 +247,7 @@ export default function AgriculturalAIChatbot() {
               placeholder={
                 currentSession?.agent
                   ? `Ask about ${currentSession.agent.name.toLowerCase()}...`
-                  : "Message AgriAI..."
+                  : "Message PRAGATI..."
               }
             />
           </div>

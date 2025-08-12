@@ -57,7 +57,7 @@ export function AppSidebar({
             <span className="text-lg">🌾</span>
           </div>
           <div>
-            <h2 className="font-semibold text-gray-900">AgriAI</h2>
+            <h2 className="font-semibold text-gray-900">PRAGATI</h2>
             <p className="text-xs text-gray-500">Smart Farming Assistant</p>
           </div>
         </div>

@@ -51,7 +51,7 @@ export function ChatMessages({
           <div className="text-center py-12">
             <div className="text-6xl mb-6">🌾</div>
             <h1 className="text-3xl font-bold mb-4 text-green-700">
-              Welcome to AgriAI Assistant
+              Welcome to PRAGATI
             </h1>
             <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
               Your intelligent farming companion powered by AI. Get expert
