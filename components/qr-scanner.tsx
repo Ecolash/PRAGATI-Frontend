@@ -1,11 +1,17 @@
-/* eslint-disable prettier/prettier */
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import { Html5Qrcode } from "html5-qrcode";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { QrCode, Camera, X, CheckCircle } from "lucide-react";
+import {
+  QrCode,
+  Camera,
+  X,
+  CheckCircle,
+  RefreshCw,
+  Image as ImageIcon,
+} from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface QRScannerProps {
@@ -18,63 +24,88 @@ export function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
   const [isScanning, setIsScanning] = useState(false);
   const [lastScannedData, setLastScannedData] = useState<string>("");
   const [error, setError] = useState<string>("");
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const [, setCameraId] = useState<string | null>(null);
+  const [cameras, setCameras] = useState<any[]>([]);
+  const [currentCameraIndex, setCurrentCameraIndex] = useState(0);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
 
-  const startScanning = () => {
+  const startScanning = async () => {
     setIsScanning(true);
     setError("");
 
-    // Clear any existing scanner
-    if (scannerRef.current) {
-      scannerRef.current.clear();
-    }
+    try {
+      const devices = await Html5Qrcode.getCameras();
+      setCameras(devices);
 
-    scannerRef.current = new Html5QrcodeScanner(
-      "qr-reader",
-      {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
-        aspectRatio: 1.0,
-      },
-      false
-    );
+      if (devices.length > 0) {
+        const id = devices[currentCameraIndex % devices.length].id;
+        setCameraId(id);
 
-    scannerRef.current.render(
-      (decodedText) => {
-        console.log("QR Code scanned:", decodedText);
-        setLastScannedData(decodedText);
-        onScanSuccess?.(decodedText);
-
-        // Auto-stop scanning after successful scan
-        stopScanning();
-      },
-      (errorMessage) => {
-        // Don't show every scan attempt error, only real issues
-        if (!errorMessage.includes("No MultiFormat Readers")) {
-          console.warn("QR scan error:", errorMessage);
-        }
+        scannerRef.current = new Html5Qrcode("qr-reader");
+        await scannerRef.current.start(
+          id,
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+          },
+          (decodedText) => {
+            setLastScannedData(decodedText);
+            onScanSuccess?.(decodedText);
+            stopScanning();
+          },
+          (errorMessage) => {
+            if (!errorMessage.includes("No MultiFormat Readers")) {
+              console.warn("QR scan error:", errorMessage);
+            }
+          },
+        );
+      } else {
+        setError("No camera found.");
       }
-    );
+    } catch (err: any) {
+      setError(err.message || "Camera access error");
+    }
   };
 
-  const stopScanning = () => {
+  const stopScanning = async () => {
     if (scannerRef.current) {
       try {
-        scannerRef.current.clear();
+        await scannerRef.current.stop();
+        await scannerRef.current.clear();
       } catch (error) {
-        console.warn("Error clearing scanner:", error);
+        console.warn("Error stopping scanner:", error);
       }
       scannerRef.current = null;
     }
     setIsScanning(false);
   };
 
-  //   const handleError = (errorMsg: string) => {
-  //     setError(errorMsg);
-  //     onScanError?.(errorMsg);
-  //   };
+  const flipCamera = async () => {
+    if (cameras.length > 1) {
+      await stopScanning();
+      setCurrentCameraIndex((prev) => (prev + 1) % cameras.length);
+      setTimeout(startScanning, 300);
+    }
+  };
 
-  // Cleanup on unmount
+  const uploadFromGallery = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const html5QrCode = new Html5Qrcode("qr-reader");
+      const result = await html5QrCode.scanFile(file, true);
+      setLastScannedData(result);
+      onScanSuccess?.(result);
+      html5QrCode.clear();
+    } catch (err: any) {
+      setError("No QR code found in the image.");
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     return () => {
       stopScanning();
@@ -100,7 +131,8 @@ export function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
         <div className="relative">
           <div
             id="qr-reader"
-            className={`w-full ${isScanning ? "block" : "hidden"}`}
+            className={`w-full ${isScanning ? "block" : "hidden"} rounded-lg overflow-hidden`}
+            style={{ minHeight: "250px" }}
           />
 
           {!isScanning && (
@@ -109,6 +141,31 @@ export function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
                 <Camera className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-500">Ready to scan QR codes</p>
               </div>
+            </div>
+          )}
+
+          {/* Floating Buttons */}
+          {isScanning && (
+            <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-3 mb-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={flipCamera}
+                disabled={cameras.length <= 1}
+                className="w-10 h-10 rounded-full bg-white shadow flex items-center justify-center p-0"
+              >
+                <RefreshCw className="h-5 w-5 text-gray-700" />
+              </Button>
+
+              <label className="w-10 h-10 rounded-full bg-white shadow cursor-pointer flex items-center justify-center">
+                <ImageIcon className="h-5 w-5 text-gray-700" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={uploadFromGallery}
+                />
+              </label>
             </div>
           )}
         </div>
@@ -158,84 +215,7 @@ export function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
             </Button>
           )}
         </div>
-
-        {/* Instructions */}
-        <div className="text-xs text-gray-500 space-y-1">
-          <p>• Point your camera at a QR code</p>
-          <p>• Make sure the QR code is well-lit and in focus</p>
-          <p>• Keep the camera steady for best results</p>
-        </div>
       </CardContent>
     </Card>
-  );
-}
-
-// Example usage component
-export function QRScannerDemo() {
-  const [showScanner, setShowScanner] = useState(false);
-  const [scannedData, setScannedData] = useState<string[]>([]);
-
-  const handleScanSuccess = (data: string) => {
-    console.log("Scanned QR data:", data);
-    setScannedData((prev) => [data, ...prev.slice(0, 4)]); // Keep last 5 scans
-
-    // You can handle different types of QR codes here
-    if (data.startsWith("http")) {
-      // Handle URL QR codes
-      console.log("URL detected:", data);
-    } else if (data.includes("SEED_") || data.includes("FERT_")) {
-      // Handle agricultural product codes
-      console.log("Agricultural product detected:", data);
-    } else {
-      // Handle other QR codes
-      console.log("General QR code:", data);
-    }
-  };
-
-  const handleScanError = (error: string) => {
-    console.error("QR scan error:", error);
-  };
-
-  return (
-    <div className="space-y-4">
-      <Button
-        onClick={() => setShowScanner(true)}
-        className="bg-emerald-600 hover:bg-emerald-700"
-      >
-        <QrCode className="h-4 w-4 mr-2" />
-        Open QR Scanner
-      </Button>
-
-      {showScanner && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <QRScanner
-            onScanSuccess={handleScanSuccess}
-            onScanError={handleScanError}
-            onClose={() => setShowScanner(false)}
-          />
-        </div>
-      )}
-
-      {/* Display recent scans */}
-      {scannedData.length > 0 && (
-        <Card className="w-full max-w-md mx-auto">
-          <CardHeader>
-            <CardTitle className="text-base">Recent Scans</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {scannedData.map((data, index) => (
-                <div
-                  key={index}
-                  className="p-2 bg-gray-50 rounded text-sm break-all"
-                >
-                  {data}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
   );
 }
