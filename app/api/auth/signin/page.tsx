@@ -3,6 +3,7 @@
 import type React from "react";
 
 import { useState } from "react";
+import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,26 +24,33 @@ export default function SignIn() {
     password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
 
-    // Simulate authentication
-    setTimeout(() => {
-      const userData = {
-        id: "1",
+    try {
+      const result = await signIn("credentials", {
         username: formData.username,
-        fullName: "John Farmer",
-        email: "john@example.com",
-      };
+        password: formData.password,
+        redirect: false,
+      });
 
-      // Store user data in localStorage for demo
-      localStorage.setItem("pragati_user", JSON.stringify(userData));
+      if (result?.error) {
+        setError("Invalid username or password");
+      } else {
+        // Successful signin
+        console.log("Signin result:", result);
+        router.push("/dashboard");
+      }
+    } catch (error) {
+      setError("An error occurred during signin");
+    } finally {
       setIsLoading(false);
-      router.push("/dashboard");
-    }, 1500);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,6 +135,12 @@ export default function SignIn() {
                 </div>
               </div>
 
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-red-600 text-sm font-medium">{error}</p>
+                </div>
+              )}
+
               <div className="flex items-center justify-between text-sm">
                 <Link
                   href="/forgot-password"
@@ -159,7 +173,7 @@ export default function SignIn() {
               <p className="text-gray-600">
                 Don't have an account?{" "}
                 <Link
-                  href="/api/auth/signup"
+                  href="/signup"
                   className="text-green-600 hover:text-green-700 font-semibold transition-colors"
                 >
                   Sign up here
