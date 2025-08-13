@@ -28,7 +28,7 @@ export default function SignUp() {
   const [formData, setFormData] = useState({
     fullName: "",
     username: "",
-    aadhaar: "",
+    aadharNumber: "",
     password: "",
     confirmPassword: "",
   });
@@ -47,8 +47,11 @@ export default function SignUp() {
       newErrors.username = "Username must be at least 3 characters";
     }
 
-    if (formData.aadhaar.length !== 12 || !/^\d{12}$/.test(formData.aadhaar)) {
-      newErrors.aadhaar = "Aadhaar must be exactly 12 digits";
+    if (
+      formData.aadharNumber.length !== 12 ||
+      !/^\d{12}$/.test(formData.aadharNumber)
+    ) {
+      newErrors.aadharNumber = "Aadhaar must be exactly 12 digits";
     }
 
     if (formData.password.length < 6) {
@@ -70,21 +73,34 @@ export default function SignUp() {
 
     setIsLoading(true);
 
-    // Simulate registration
-    setTimeout(() => {
-      const userData = {
-        id: "1",
-        username: formData.username,
-        fullName: formData.fullName,
-        aadhaar: formData.aadhaar,
-        email: `${formData.username}@example.com`,
-      };
+    try {
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fullName: formData.fullName,
+          username: formData.username,
+          aadharNumber: formData.aadharNumber,
+          password: formData.password,
+        }),
+      });
 
-      // Store user data in localStorage for demo
-      localStorage.setItem("pragati_user", JSON.stringify(userData));
+      if (response.ok) {
+        const userData = await response.json();
+        // Store user data in localStorage for demo
+        //localStorage.setItem("pragati_user", JSON.stringify(userData));
+        router.push("/dashboard");
+      } else {
+        const errorMessage = await response.text();
+        setErrors({ general: errorMessage });
+      }
+    } catch (error) {
+      setErrors({ general: "An error occurred during signup" });
+    } finally {
       setIsLoading(false);
-      router.push("/dashboard");
-    }, 2000);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -189,27 +205,29 @@ export default function SignUp() {
 
                 <div className="space-y-2">
                   <Label
-                    htmlFor="aadhaar"
+                    htmlFor="aadharNumber"
                     className="text-sm font-medium text-gray-700 flex items-center gap-2"
                   >
                     <CreditCard className="w-4 h-4 text-green-600" />
                     Aadhar Number
                   </Label>
                   <Input
-                    id="aadhaar"
-                    name="aadhaar"
+                    id="aadharNumber"
+                    name="aadharNumber"
                     type="text"
                     placeholder="Enter 12-digit Aadhar number"
-                    value={formData.aadhaar}
+                    value={formData.aadharNumber}
                     onChange={handleInputChange}
                     maxLength={12}
                     required
                     className={`h-11 border-gray-200 focus:border-green-500 focus:ring-green-500 transition-colors ${
-                      errors.aadhaar ? "border-red-500" : ""
+                      errors.aadharNumber ? "border-red-500" : ""
                     }`}
                   />
-                  {errors.aadhaar && (
-                    <p className="text-red-500 text-xs">{errors.aadhaar}</p>
+                  {errors.aadharNumber && (
+                    <p className="text-red-500 text-xs">
+                      {errors.aadharNumber}
+                    </p>
                   )}
                 </div>
 
@@ -265,6 +283,14 @@ export default function SignUp() {
                   )}
                 </div>
               </div>
+
+              {errors.general && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-red-600 text-sm font-medium">
+                    {errors.general}
+                  </p>
+                </div>
+              )}
 
               <Button
                 type="submit"

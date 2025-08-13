@@ -1,7 +1,10 @@
+/* eslint-disable prettier/prettier */
 "use client";
 
 import { useState } from "react";
-import { Plus, MessageSquare, Settings, User } from "lucide-react";
+import { Plus, MessageSquare, LogOut, User, QrCode } from "lucide-react";
+import { signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -35,8 +38,9 @@ export function AppSidebar({
   onSelectAgentAction,
 }: StreamlinedSidebarProps) {
   const [activeSection, setActiveSection] = useState<"agents" | "history">(
-    "agents",
+    "agents"
   );
+  const router = useRouter();
 
   const groupedAgents = agricultureAgents.reduce(
     (acc, agent) => {
@@ -46,7 +50,7 @@ export function AppSidebar({
       acc[agent.category].push(agent);
       return acc;
     },
-    {} as Record<string, typeof agricultureAgents>,
+    {} as Record<string, typeof agricultureAgents>
   );
 
   return (
@@ -75,6 +79,23 @@ export function AppSidebar({
                 >
                   <Plus className="h-4 w-4" />
                   New Chat
+                </Button>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* QR Scanner Button */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <Button
+                  onClick={() => router.push("/qr-scanner")}
+                  className="w-full justify-start gap-2 h-9 bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <QrCode className="h-4 w-4" />
+                  QR Scanner
                 </Button>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -277,15 +298,18 @@ export function AppSidebar({
       <SidebarFooter className="p-4 border-t border-gray-100">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton className="gap-3 hover:bg-gray-50 text-gray-700">
-              <User className="h-4 w-4 text-gray-400" />
+            <SidebarMenuButton className="gap-3 hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700">
+              <User className="h-4 w-4 text-emerald-500" />
               <span>Profile</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton className="gap-3 hover:bg-gray-50 text-gray-700">
-              <Settings className="h-4 w-4 text-gray-400" />
-              <span>Settings</span>
+            <SidebarMenuButton
+              onClick={() => signOut({ callbackUrl: "/api/auth/signin" })}
+              className="gap-3 hover:bg-red-50 text-red-600 hover:text-red-700"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Sign Out</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
