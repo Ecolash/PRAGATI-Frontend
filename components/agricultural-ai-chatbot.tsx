@@ -10,13 +10,9 @@ import { Separator } from "@/components/ui/separator";
 import { AppSidebar } from "./app-sidebar";
 import { ChatMessages } from "./chat-messages";
 import { ChatInput } from "./chat-input";
-import { CropYieldInterface } from "./agent-interfaces/crop-yield-interface";
-import { WeatherAdvisoryInterface } from "./agent-interfaces/weather-advisory-interface";
-import { CropRecommendationsInterface } from "./agent-interfaces/crop-recommendations-interface";
-import { CropHealthInterface } from "./agent-interfaces/crop-health-interface";
-import { MarketPricesInterface } from "./agent-interfaces/market-prices-interface";
 import { ChatSession, ChatMessage, Language } from "@/types/agriculture";
 import { agricultureAgents } from "@/data/agents";
+import { CropRecommendation } from "@/components/crop-recommendation";
 
 export default function AgriculturalAIChatbot() {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -169,22 +165,43 @@ export default function AgriculturalAIChatbot() {
     [currentSessionId, createNewChat, selectedLanguage],
   );
 
+  // Minimal placeholder for specialised agents
   const renderAgentInterface = () => {
     if (!currentSession?.agent) return null;
 
     switch (currentSession.agent.id) {
       case "crop-yield":
-        return <CropYieldInterface />;
+        return (
+          <div className="p-4 text-center text-gray-500 text-lg">
+            Crop Yield Agent Page
+          </div>
+        );
       case "weather-advisory":
-        return <WeatherAdvisoryInterface />;
+        return (
+          <div className="p-4 text-center text-gray-500 text-lg">
+            Weather Advisory Agent Page
+          </div>
+        );
       case "crop-recommendations":
-        return <CropRecommendationsInterface />;
+        return <CropRecommendation />;
       case "crop-health":
-        return <CropHealthInterface />;
+        return (
+          <div className="p-4 text-center text-gray-500 text-lg">
+            Crop Health Agent Page
+          </div>
+        );
       case "market-prices":
-        return <MarketPricesInterface />;
+        return (
+          <div className="p-4 text-center text-gray-500 text-lg">
+            Market Prices Agent Page
+          </div>
+        );
       default:
-        return null;
+        return (
+          <div className="p-4 text-center text-gray-500 text-lg">
+            Unknown Agent Page
+          </div>
+        );
     }
   };
 
@@ -231,25 +248,27 @@ export default function AgriculturalAIChatbot() {
               )}
             </div>
           </header>
-
           <div className="flex flex-col flex-1 min-h-0">
-            {renderAgentInterface()}
-            <ChatMessages
-              messages={currentSession?.messages || []}
-              isLoading={isLoading}
-              onTranslateActionMessageAction={translateMessage}
-            />
-            <ChatInput
-              onSendMessageAction={sendMessage}
-              onLanguageChangeAction={handleLanguageChange}
-              selectedLanguage={selectedLanguage}
-              disabled={isLoading}
-              placeholder={
-                currentSession?.agent
-                  ? `Ask about ${currentSession.agent.name.toLowerCase()}...`
-                  : "Message PRAGATI..."
-              }
-            />
+            {renderAgentInterface() || (
+              <>
+                <ChatMessages
+                  messages={currentSession?.messages || []}
+                  isLoading={isLoading}
+                  onTranslateActionMessageAction={translateMessage}
+                />
+                <ChatInput
+                  onSendMessageAction={sendMessage}
+                  onLanguageChangeAction={handleLanguageChange}
+                  selectedLanguage={selectedLanguage}
+                  disabled={isLoading}
+                  placeholder={
+                    currentSession?.agent
+                      ? `Ask about ${currentSession.agent.name.toLowerCase()}...`
+                      : "Message PRAGATI..."
+                  }
+                />
+              </>
+            )}
           </div>
         </SidebarInset>
       </div>
