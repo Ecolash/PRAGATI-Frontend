@@ -121,3 +121,16 @@
     @apply bg-background text-foreground;
   }
 }
+
+
+/* Added custom slider styles to remove thumb and ensure proper blue colors */
+@layer components {
+    /* Custom slider styles to remove the thumb/handle */
+    .slider-no-thumb [data-radix-slider-thumb] {
+        display: none !important;
+    }
+
+    .slider-no-thumb [role="slider"] {
+        display: none !important;
+    }
+}

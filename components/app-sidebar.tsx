@@ -82,17 +82,13 @@ export function AppSidebar({
                 </Button>
               </SidebarMenuItem>
             </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
 
         {/* QR Scanner Button */}
-        <SidebarGroup>
-          <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <Button
                   onClick={() => router.push("/qr-scanner")}
-                  className="w-full justify-start gap-2 h-9 bg-blue-600 hover:bg-blue-700 text-white"
+                  className="w-full justify-start gap-2 h-9 mt-1 bg-slate-200 hover:bg-slate-300 text-green-950"
                 >
                   <QrCode className="h-4 w-4" />
                   QR Scanner

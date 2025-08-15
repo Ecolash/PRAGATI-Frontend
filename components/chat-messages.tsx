@@ -8,6 +8,11 @@ import { MessageTranslator } from "./message-translator";
 import { ChatMessage } from "@/types/agriculture";
 import { supportedLanguages } from "@/data/languages";
 
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+import "highlight.js/styles/github.css";
+
 interface ChatMessagesProps {
   messages: ChatMessage[];
   isLoading?: boolean;
@@ -120,12 +125,21 @@ export function ChatMessages({
                   className={`rounded-2xl px-4 py-3 ${
                     message.role === "user"
                       ? "bg-primary text-primary-foreground ml-auto"
-                      : "bg-muted"
+                      : "bg-muted prose prose-sm max-w-none"
                   }`}
                 >
-                  <div className="whitespace-pre-wrap leading-relaxed">
-                    {message.content}
-                  </div>
+                  {message.role === "assistant" ? (
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeHighlight]}
+                    >
+                      {message.content}
+                    </ReactMarkdown>
+                  ) : (
+                    <div className="whitespace-pre-wrap leading-relaxed">
+                      {message.content}
+                    </div>
+                  )}
 
                   {message.attachments && message.attachments.length > 0 && (
                     <div className="mt-3 space-y-2">
@@ -145,7 +159,6 @@ export function ChatMessages({
                     </div>
                   )}
 
-                  {/* Show translations if available */}
                   {message.translations &&
                     Object.keys(message.translations).length > 0 && (
                       <div className="mt-3 space-y-2 border-t border-border/20 pt-3">
