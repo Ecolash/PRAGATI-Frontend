@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 "use client";
 
 import { useState, useCallback } from "react";
@@ -23,7 +22,7 @@ export default function AgriculturalAIChatbot() {
   const [selectedLanguage, setSelectedLanguage] = useState("en");
 
   const currentSession = chatSessions.find(
-    (session) => session.id === currentSessionId
+    (session) => session.id === currentSessionId,
   );
 
   const createNewChat = useCallback(() => {
@@ -68,7 +67,7 @@ export default function AgriculturalAIChatbot() {
         setCurrentSessionId(newSession.id);
       }
     },
-    [selectedLanguage]
+    [selectedLanguage],
   );
 
   const handleLanguageChange = useCallback((language: Language) => {
@@ -91,14 +90,14 @@ export default function AgriculturalAIChatbot() {
                           [targetLanguage]: `[Translated] ${msg.content}`,
                         },
                       }
-                    : msg
+                    : msg,
                 ),
               }
-            : session
-        )
+            : session,
+        ),
       );
     },
-    [currentSessionId]
+    [currentSessionId],
   );
 
   const sendMessage = useCallback(
@@ -135,8 +134,8 @@ export default function AgriculturalAIChatbot() {
                     : session.title,
                 updatedAt: new Date(),
               }
-            : session
-        )
+            : session,
+        ),
       );
 
       setIsLoading(true);
@@ -179,8 +178,8 @@ export default function AgriculturalAIChatbot() {
                   messages: [...session.messages, assistantMessage],
                   updatedAt: new Date(),
                 }
-              : session
-          )
+              : session,
+          ),
         );
       } catch (error) {
         console.error("Failed to get AI response:", error);
@@ -204,14 +203,14 @@ export default function AgriculturalAIChatbot() {
                   messages: [...session.messages, errorMessage],
                   updatedAt: new Date(),
                 }
-              : session
-          )
+              : session,
+          ),
         );
       } finally {
         setIsLoading(false);
       }
     },
-    [currentSessionId, createNewChat, selectedLanguage]
+    [currentSessionId, createNewChat, selectedLanguage],
   );
 
   // Minimal placeholder for specialised agents

@@ -386,7 +386,7 @@ export function CropRecommendation() {
           {recommendations && (
             <>
               <Card className="shadow-xl border-0 bg-gradient-to-br from-green-500 to-emerald-600 text-white lg:col-span-2 lg:row-span-1">
-                <CardContent className="p-6 lg:p-8 text-center">
+                <CardContent className="p-2 lg:p-4 text-center">
                   <div className="text-6xl lg:text-7xl mb-4">
                     {cropMetadata[recommendations.predictions.recommended_crop]
                       ?.emoji || "🌱"}
