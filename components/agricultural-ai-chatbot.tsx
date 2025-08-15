@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 "use client";
 
 import { useState, useCallback } from "react";
@@ -12,6 +13,7 @@ import { ChatMessages } from "./chat-messages";
 import { ChatInput } from "./chat-input";
 import { ChatSession, ChatMessage, Language } from "@/types/agriculture";
 import { agricultureAgents } from "@/data/agents";
+import { agriculturalAPI } from "@/lib/agricultural-api";
 import { CropRecommendation } from "@/components/crop-recommendation";
 
 export default function AgriculturalAIChatbot() {
@@ -21,7 +23,7 @@ export default function AgriculturalAIChatbot() {
   const [selectedLanguage, setSelectedLanguage] = useState("en");
 
   const currentSession = chatSessions.find(
-    (session) => session.id === currentSessionId,
+    (session) => session.id === currentSessionId
   );
 
   const createNewChat = useCallback(() => {
@@ -66,7 +68,7 @@ export default function AgriculturalAIChatbot() {
         setCurrentSessionId(newSession.id);
       }
     },
-    [selectedLanguage],
+    [selectedLanguage]
   );
 
   const handleLanguageChange = useCallback((language: Language) => {
@@ -89,14 +91,14 @@ export default function AgriculturalAIChatbot() {
                           [targetLanguage]: `[Translated] ${msg.content}`,
                         },
                       }
-                    : msg,
+                    : msg
                 ),
               }
-            : session,
-        ),
+            : session
+        )
       );
     },
-    [currentSessionId],
+    [currentSessionId]
   );
 
   const sendMessage = useCallback(
@@ -133,19 +135,40 @@ export default function AgriculturalAIChatbot() {
                     : session.title,
                 updatedAt: new Date(),
               }
-            : session,
-        ),
+            : session
+        )
       );
 
       setIsLoading(true);
 
-      setTimeout(() => {
+      try {
+        // Prepare context for the API call
+        const previousMessages =
+          currentSession?.messages.slice(-5).map((msg) => ({
+            role: msg.role,
+            content: msg.content,
+          })) || [];
+
+        const apiResponse = await agriculturalAPI.sendQuery({
+          query: content,
+          language: selectedLanguage,
+          context: {
+            agent_type: currentSession?.agent?.id,
+            previous_messages: previousMessages,
+          },
+        });
+
         const assistantMessage: ChatMessage = {
           id: (Date.now() + 1).toString(),
           role: "assistant",
-          content: `Thank you for your question about "${content}". As your agricultural AI assistant, I'm here to help with farming insights and recommendations. How else can I assist you?`,
+          content: apiResponse.response,
           timestamp: new Date(),
           language: selectedLanguage,
+          metadata: {
+            confidence: apiResponse.confidence,
+            sources: apiResponse.sources,
+            agent_type: apiResponse.agent_type,
+          },
         };
 
         setChatSessions((prev) =>
@@ -156,13 +179,39 @@ export default function AgriculturalAIChatbot() {
                   messages: [...session.messages, assistantMessage],
                   updatedAt: new Date(),
                 }
-              : session,
-          ),
+              : session
+          )
         );
+      } catch (error) {
+        console.error("Failed to get AI response:", error);
+
+        // Fallback message if API fails
+        const errorMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content:
+            "I'm sorry, I'm having trouble connecting to the agricultural AI service right now. Please try again later.",
+          timestamp: new Date(),
+          language: selectedLanguage,
+          error: true,
+        };
+
+        setChatSessions((prev) =>
+          prev.map((session) =>
+            session.id === currentSessionId
+              ? {
+                  ...session,
+                  messages: [...session.messages, errorMessage],
+                  updatedAt: new Date(),
+                }
+              : session
+          )
+        );
+      } finally {
         setIsLoading(false);
-      }, 1500);
+      }
     },
-    [currentSessionId, createNewChat, selectedLanguage],
+    [currentSessionId, createNewChat, selectedLanguage]
   );
 
   // Minimal placeholder for specialised agents
