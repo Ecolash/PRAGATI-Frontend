@@ -15,6 +15,12 @@ export interface ChatMessage {
   attachments?: FileAttachment[];
   language?: string;
   translations?: Record<string, string>;
+  metadata?: {
+    confidence?: number;
+    sources?: string[];
+    agent_type?: string;
+  };
+  error?: boolean;
 }
 
 export interface FileAttachment {

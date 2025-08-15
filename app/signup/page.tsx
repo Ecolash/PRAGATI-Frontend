@@ -88,15 +88,13 @@ export default function SignUp() {
       });
 
       if (response.ok) {
-        const userData = await response.json();
-        // Store user data in localStorage for demo
-        //localStorage.setItem("pragati_user", JSON.stringify(userData));
         router.push("/dashboard");
       } else {
         const errorMessage = await response.text();
         setErrors({ general: errorMessage });
       }
     } catch (error) {
+      console.error(error);
       setErrors({ general: "An error occurred during signup" });
     } finally {
       setIsLoading(false);
