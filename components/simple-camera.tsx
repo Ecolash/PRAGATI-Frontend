@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Camera, RefreshCw, X, Image as ImageIcon } from "lucide-react";
+import { Camera, RefreshCw, X, ImageIcon } from "lucide-react";
 
 interface SimpleCameraProps {
   onCapture?: (dataUrl: string) => void;
@@ -74,6 +74,7 @@ export function SimpleCamera({ onCapture, onClose }: SimpleCameraProps) {
       ctx.drawImage(video, 0, 0);
       const dataUrl = canvas.toDataURL("image/jpeg");
       onCapture?.(dataUrl);
+      stopCamera();
     }
   };
 
@@ -146,7 +147,11 @@ export function SimpleCamera({ onCapture, onClose }: SimpleCameraProps) {
               >
                 Capture
               </Button>
-              <Button variant="outline" className="flex-1" onClick={stopCamera}>
+              <Button
+                variant="outline"
+                className="flex-1 bg-transparent"
+                onClick={stopCamera}
+              >
                 Stop
               </Button>
             </>
