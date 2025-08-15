@@ -14,6 +14,7 @@ import { ChatSession, ChatMessage, Language } from "@/types/agriculture";
 import { agricultureAgents } from "@/data/agents";
 import { agriculturalAPI } from "@/lib/agricultural-api";
 import { CropRecommendation } from "@/components/crop-recommendation";
+import { FertilizerRecommendation } from "@/components/fertilizer-recommendation";
 
 export default function AgriculturalAIChatbot() {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -224,6 +225,8 @@ export default function AgriculturalAIChatbot() {
             Crop Yield Agent Page
           </div>
         );
+      case "fertilizer-recommendations":
+        return <FertilizerRecommendation />;
       case "weather-advisory":
         return (
           <div className="p-4 text-center text-gray-500 text-lg">
