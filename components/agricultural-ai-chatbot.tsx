@@ -13,8 +13,10 @@ import { ChatInput } from "./chat-input";
 import { ChatSession, ChatMessage, Language } from "@/types/agriculture";
 import { agricultureAgents } from "@/data/agents";
 import { agriculturalAPI } from "@/lib/agricultural-api";
+
 import { CropRecommendation } from "@/components/crop-recommendation";
 import { FertilizerRecommendation } from "@/components/fertilizer-recommendation";
+import { IrrigationCalendar } from "@/components/irrigation-calendar";
 
 export default function AgriculturalAIChatbot() {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -235,6 +237,8 @@ export default function AgriculturalAIChatbot() {
         );
       case "crop-recommendations":
         return <CropRecommendation />;
+      case "irrigation-planning":
+        return <IrrigationCalendar />;
       case "crop-health":
         return (
           <div className="p-4 text-center text-gray-500 text-lg">

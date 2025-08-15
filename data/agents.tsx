@@ -70,7 +70,7 @@ export const agricultureAgents: AgricultureAgent[] = [
     color: "text-red-600",
   },
   {
-    id: "irrigation-predictions",
+    id: "irrigation-planning",
     name: "Irrigation Planning",
     description: "Optimize irrigation schedules",
     icon: <Droplets className="h-4 w-4" />,
