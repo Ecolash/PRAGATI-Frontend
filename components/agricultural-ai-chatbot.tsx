@@ -17,6 +17,7 @@ import { agriculturalAPI } from "@/lib/agricultural-api";
 import { CropRecommendation } from "@/components/crop-recommendation";
 import { FertilizerRecommendation } from "@/components/fertilizer-recommendation";
 import { IrrigationCalendar } from "@/components/irrigation-calendar";
+import { CropDiseaseDetection } from "@/components/crop-disease-prediction";
 
 export default function AgriculturalAIChatbot() {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -240,11 +241,7 @@ export default function AgriculturalAIChatbot() {
       case "irrigation-planning":
         return <IrrigationCalendar />;
       case "crop-health":
-        return (
-          <div className="p-4 text-center text-gray-500 text-lg">
-            Crop Health Agent Page
-          </div>
-        );
+        return <CropDiseaseDetection />;
       case "market-prices":
         return (
           <div className="p-4 text-center text-gray-500 text-lg">
