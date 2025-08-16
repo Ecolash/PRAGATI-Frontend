@@ -20,6 +20,7 @@ export const agricultureAgents: AgricultureAgent[] = [
     icon: <TrendingUp className="h-4 w-4" />,
     category: "prediction",
     color: "text-emerald-600",
+    mode: "both",
   },
   {
     id: "weather-advisory",
@@ -28,6 +29,7 @@ export const agricultureAgents: AgricultureAgent[] = [
     icon: <Cloud className="h-4 w-4" />,
     category: "advisory",
     color: "text-sky-600",
+    mode: "both",
   },
   {
     id: "crop-recommendations",
@@ -36,6 +38,7 @@ export const agricultureAgents: AgricultureAgent[] = [
     icon: <Sprout className="h-4 w-4" />,
     category: "advisory",
     color: "text-green-600",
+    mode: "both",
   },
   {
     id: "crop-health",
@@ -44,6 +47,7 @@ export const agricultureAgents: AgricultureAgent[] = [
     icon: <Microscope className="h-4 w-4" />,
     category: "analysis",
     color: "text-purple-600",
+    mode: "both",
   },
   {
     id: "market-prices",
@@ -52,6 +56,7 @@ export const agricultureAgents: AgricultureAgent[] = [
     icon: <DollarSign className="h-4 w-4" />,
     category: "market",
     color: "text-amber-600",
+    mode: "agent",
   },
   {
     id: "fertilizer-recommendations",
@@ -60,6 +65,7 @@ export const agricultureAgents: AgricultureAgent[] = [
     icon: <Beaker className="h-4 w-4" />,
     category: "advisory",
     color: "text-orange-600",
+    mode: "both",
   },
   {
     id: "pest-prediction",
@@ -68,6 +74,7 @@ export const agricultureAgents: AgricultureAgent[] = [
     icon: <Bug className="h-4 w-4" />,
     category: "prediction",
     color: "text-red-600",
+    mode: "both",
   },
   {
     id: "irrigation-planning",
@@ -76,6 +83,7 @@ export const agricultureAgents: AgricultureAgent[] = [
     icon: <Droplets className="h-4 w-4" />,
     category: "prediction",
     color: "text-cyan-600",
+    mode: "both",
   },
   {
     id: "price-forecasting",
@@ -84,6 +92,7 @@ export const agricultureAgents: AgricultureAgent[] = [
     icon: <BarChart3 className="h-4 w-4" />,
     category: "market",
     color: "text-indigo-600",
+    mode: "agent",
   },
   {
     id: "agriculture-news",
@@ -92,5 +101,6 @@ export const agricultureAgents: AgricultureAgent[] = [
     icon: <Newspaper className="h-4 w-4" />,
     category: "news",
     color: "text-slate-600",
+    mode: "tool",
   },
 ];

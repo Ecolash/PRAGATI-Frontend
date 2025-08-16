@@ -5,6 +5,7 @@ export interface AgricultureAgent {
   icon: React.ReactNode;
   category: "prediction" | "advisory" | "analysis" | "market" | "news";
   color: string;
+  mode?: "tool" | "agent" | "both";
 }
 
 export interface ChatMessage {

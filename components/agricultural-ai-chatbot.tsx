@@ -121,6 +121,8 @@ export default function AgriculturalAIChatbot() {
       setAgentMode(false); // Reset to tool mode when selecting a new agent
       const agent = agricultureAgents.find((a) => a.id === agentId);
       if (agent) {
+        if (agent.mode === "agent") setAgentMode(true);
+        else if (agent.mode === "tool") setAgentMode(false);
         const newSession: ChatSession = {
           id: Date.now().toString(),
           title: agent.name,
@@ -469,21 +471,17 @@ export default function AgriculturalAIChatbot() {
                 </>
               )}
             </div>
-            {currentSession?.agent && (
+            {currentSession?.agent && currentSession.agent.mode === "both" && (
               <div className="flex items-center gap-2 ml-auto">
-                {/* Tool label for md+ screens, icon for smaller */}
                 <span className="hidden sm:inline text-sm text-gray-600">
                   Tool
                 </span>
                 <Wrench className="sm:hidden w-4 h-4 text-gray-600" />
-
                 <Switch
                   checked={agentMode}
                   onCheckedChange={setAgentMode}
                   className="data-[state=checked]:bg-emerald-600"
                 />
-
-                {/* Agent label for md+ screens, icon for smaller */}
                 <span className="hidden sm:inline text-sm text-gray-600">
                   Agent
                 </span>
