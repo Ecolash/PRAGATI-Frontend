@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 "use client";
 
 import type React from "react";
@@ -13,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Upload,
   Camera,
@@ -24,14 +26,10 @@ import {
   Eye,
 } from "lucide-react";
 import { SimpleCamera } from "./simple-camera";
-
-interface PestPredictionResponse {
-  success: boolean;
-  possible_pest_names?: string[];
-  description?: string;
-  pesticide_recommendation?: string;
-  error?: string;
-}
+import {
+  agriculturalAPI,
+  PestPredictionResponse,
+} from "@/lib/agricultural-api";
 
 const cropTypes = [
   "Rice",
@@ -50,52 +48,11 @@ const cropTypes = [
   "Coffee",
 ];
 
-const mockPestResults: Record<string, PestPredictionResponse> = {
-  Rice: {
-    success: true,
-    possible_pest_names: [
-      "Brown Planthopper",
-      "Rice Stem Borer",
-      "Leaf Folder",
-    ],
-    description:
-      "Brown Planthopper is the most likely pest affecting your rice crop. These small, brown insects feed on plant sap, causing yellowing and stunting of plants. They can also transmit viral diseases. The insects are typically found on the lower parts of the plant and can cause 'hopper burn' - a condition where plants turn brown and dry up.",
-    pesticide_recommendation:
-      "Apply Imidacloprid 17.8% SL at 100ml per acre or Thiamethoxam 25% WG at 100g per acre. For organic control, use neem oil at 3-5ml per liter of water. Apply during early morning or evening hours. Ensure proper coverage of lower plant parts where pests typically hide.",
-  },
-  Tomato: {
-    success: true,
-    possible_pest_names: ["Tomato Hornworm", "Whitefly", "Aphids"],
-    description:
-      "Tomato Hornworm appears to be the primary pest based on the damage pattern. These large, green caterpillars can quickly defoliate tomato plants and feed on fruits. They are well-camouflaged and often go unnoticed until significant damage occurs. Look for dark green or black droppings on leaves as an early sign of infestation.",
-    pesticide_recommendation:
-      "For immediate control, use Bacillus thuringiensis (Bt) spray at 2-3ml per liter of water. Chemical options include Chlorantraniliprole 18.5% SC at 150ml per acre. Hand-picking is also effective for small infestations. Apply treatments in the evening when caterpillars are most active.",
-  },
-  Potato: {
-    success: true,
-    possible_pest_names: [
-      "Colorado Potato Beetle",
-      "Potato Tuber Moth",
-      "Aphids",
-    ],
-    description:
-      "Colorado Potato Beetle is the most probable pest affecting your potato crop. Adult beetles and their larvae feed on potato leaves, and can completely defoliate plants if left untreated. The beetles are yellow-orange with black stripes, while larvae are red-orange with black spots along their sides.",
-    pesticide_recommendation:
-      "Apply Spinosad 45% SC at 200ml per acre or Emamectin Benzoate 5% SG at 200g per acre. Rotate between different chemical classes to prevent resistance. For organic control, use pyrethrin-based sprays. Remove egg masses from leaf undersides and practice crop rotation with non-solanaceous crops.",
-  },
-  Cotton: {
-    success: true,
-    possible_pest_names: ["Bollworm", "Aphids", "Thrips"],
-    description:
-      "Bollworm complex appears to be the main pest concern. These caterpillars bore into cotton bolls, causing significant yield losses. The larvae feed on squares, flowers, and developing bolls. Early detection is crucial as older larvae become more difficult to control and cause greater damage.",
-    pesticide_recommendation:
-      "Use Flubendiamide 480% SC at 200ml per acre or Chlorantraniliprole 18.5% SC at 150ml per acre. Apply when pest population reaches economic threshold levels. Combine with pheromone traps for monitoring. Avoid broad-spectrum insecticides that harm beneficial insects.",
-  },
-};
-
 export function PestPrediction() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedCrop, setSelectedCrop] = useState<string>("");
+  const [pestQuery, setPestQuery] = useState<string>("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] =
     useState<PestPredictionResponse | null>(null);
@@ -104,6 +61,7 @@ export function PestPrediction() {
 
   const handleImageUpload = (file: File) => {
     if (file && file.type.startsWith("image/")) {
+      setSelectedFile(file); // Store the file for API upload
       const reader = new FileReader();
       reader.onload = (e) => {
         setSelectedImage(e.target?.result as string);
@@ -119,27 +77,39 @@ export function PestPrediction() {
   };
 
   const analyzeImage = async () => {
-    if (!selectedImage || !selectedCrop) return;
-    setIsAnalyzing(true);
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    if (!pestQuery.trim()) {
+      alert("Please enter a pest-related query to analyze");
+      return;
+    }
 
-    const results = mockPestResults[selectedCrop];
-    setAnalysisResult(
-      results ?? {
-        success: true,
-        possible_pest_names: ["No Pests Detected"],
-        description:
-          "No significant pest activity detected in the uploaded image. The crop appears healthy with no visible signs of pest damage. Continue regular monitoring and maintain good agricultural practices.",
-        pesticide_recommendation:
-          "No immediate pesticide application needed. Continue regular field monitoring and implement preventive measures such as proper field sanitation and beneficial insect conservation.",
-      },
-    );
-    setIsAnalyzing(false);
+    setIsAnalyzing(true);
+    setAnalysisResult(null);
+
+    try {
+      console.log("Starting pest prediction...");
+      const result = await agriculturalAPI.predictPest(
+        pestQuery,
+        selectedFile || undefined
+      );
+
+      console.log("API Response:", result);
+      setAnalysisResult(result);
+    } catch (error) {
+      console.error("Error predicting pest:", error);
+      setAnalysisResult({
+        success: false,
+        error: error instanceof Error ? error.message : "Analysis failed",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const resetAnalysis = () => {
     setSelectedImage(null);
+    setSelectedFile(null);
     setSelectedCrop("");
+    setPestQuery("");
     setAnalysisResult(null);
     setShowCamera(false);
     if (fileInputRef.current) {
@@ -159,8 +129,9 @@ export function PestPrediction() {
             </h1>
           </div>
           <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto px-2">
-            Upload an image of your crop and select the crop type to get
-            AI-powered pest identification and pesticide recommendations.
+            Describe pest issues or symptoms you're observing. Optionally upload
+            an image and specify crop type for more accurate AI-powered pest
+            identification and treatment recommendations.
           </p>
         </div>
 
@@ -217,9 +188,22 @@ export function PestPrediction() {
                 </>
               )}
 
+              {/* Pest Query Input */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">
-                  Select Crop Type
+                  Describe Pest Issues or Symptoms
+                </label>
+                <Textarea
+                  value={pestQuery}
+                  onChange={(e) => setPestQuery(e.target.value)}
+                  placeholder="Describe what you're seeing: leaf damage, insects, discoloration, etc. For example: 'I see small holes in leaves and some caterpillars on my tomato plants'"
+                  className="border-orange-200 focus:border-orange-400 min-h-[80px]"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Select Crop Type (Optional)
                 </label>
                 <Select value={selectedCrop} onValueChange={setSelectedCrop}>
                   <SelectTrigger className="border-orange-200 focus:border-orange-400">
@@ -238,7 +222,7 @@ export function PestPrediction() {
               <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 <Button
                   onClick={analyzeImage}
-                  disabled={!selectedImage || !selectedCrop || isAnalyzing}
+                  disabled={!pestQuery.trim() || isAnalyzing}
                   className="flex-1 bg-orange-600 hover:bg-orange-700 text-white text-sm sm:text-base"
                 >
                   {isAnalyzing ? (
@@ -315,7 +299,7 @@ export function PestPrediction() {
                                   </span>
                                 )}
                               </Badge>
-                            ),
+                            )
                           )}
                         </div>
                       </div>
