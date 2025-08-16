@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
@@ -30,11 +29,10 @@ export default function AgriculturalAIChatbot() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [agentMode, setAgentMode] = useState(false);
 
-
   const { saveChatSession, loadChatHistory, isSaving } = useChatHistory();
 
   const currentSession = chatSessions.find(
-    (session) => session.id === currentSessionId
+    (session) => session.id === currentSessionId,
   );
 
   console.log("Current Session ID:", currentSessionId);
@@ -75,7 +73,7 @@ export default function AgriculturalAIChatbot() {
     const saveCurrentSession = async () => {
       if (currentSessionId) {
         const sessionToSave = chatSessions.find(
-          (s) => s.id === currentSessionId
+          (s) => s.id === currentSessionId,
         );
         if (sessionToSave && sessionToSave.messages.length > 0) {
           try {
@@ -141,7 +139,7 @@ export default function AgriculturalAIChatbot() {
         setCurrentSessionId(newSession.id);
       }
     },
-    [selectedLanguage]
+    [selectedLanguage],
   );
 
   const handleLanguageChange = useCallback((language: Language) => {
@@ -172,7 +170,7 @@ export default function AgriculturalAIChatbot() {
         //console.log("Calling translation API...");
         const translationResult = await agriculturalAPI.translateText(
           message.content,
-          targetLanguage
+          targetLanguage,
         );
         //console.log("Translation Result:", translationResult);
 
@@ -180,21 +178,21 @@ export default function AgriculturalAIChatbot() {
           prev.map((session) =>
             session.id === currentSessionId
               ? {
-                ...session,
-                messages: session.messages.map((msg) =>
-                  msg.id === messageId
-                    ? {
-                      ...msg,
-                      translations: {
-                        ...msg.translations,
-                        [targetLanguage]: translationResult.translated_text,
-                      },
-                    }
-                    : msg
-                ),
-              }
-              : session
-          )
+                  ...session,
+                  messages: session.messages.map((msg) =>
+                    msg.id === messageId
+                      ? {
+                          ...msg,
+                          translations: {
+                            ...msg.translations,
+                            [targetLanguage]: translationResult.translated_text,
+                          },
+                        }
+                      : msg,
+                  ),
+                }
+              : session,
+          ),
         );
         //console.log("Translation stored successfully");
       } catch (error: any) {
@@ -204,25 +202,25 @@ export default function AgriculturalAIChatbot() {
           prev.map((session) =>
             session.id === currentSessionId
               ? {
-                ...session,
-                messages: session.messages.map((msg) =>
-                  msg.id === messageId
-                    ? {
-                      ...msg,
-                      translations: {
-                        ...msg.translations,
-                        [targetLanguage]: `[Translation unavailable] ${msg.content}`,
-                      },
-                    }
-                    : msg
-                ),
-              }
-              : session
-          )
+                  ...session,
+                  messages: session.messages.map((msg) =>
+                    msg.id === messageId
+                      ? {
+                          ...msg,
+                          translations: {
+                            ...msg.translations,
+                            [targetLanguage]: `[Translation unavailable] ${msg.content}`,
+                          },
+                        }
+                      : msg,
+                  ),
+                }
+              : session,
+          ),
         );
       }
     },
-    [currentSessionId, chatSessions]
+    [currentSessionId, chatSessions],
   );
 
   const sendMessage = useCallback(
@@ -251,16 +249,16 @@ export default function AgriculturalAIChatbot() {
         prev.map((session) =>
           session.id === currentSessionId
             ? {
-              ...session,
-              messages: [...session.messages, userMessage],
-              title:
-                session.messages.length === 0
-                  ? content.slice(0, 40) + "..."
-                  : session.title,
-              updatedAt: new Date(),
-            }
-            : session
-        )
+                ...session,
+                messages: [...session.messages, userMessage],
+                title:
+                  session.messages.length === 0
+                    ? content.slice(0, 40) + "..."
+                    : session.title,
+                updatedAt: new Date(),
+              }
+            : session,
+        ),
       );
 
       setIsLoading(true);
@@ -299,12 +297,12 @@ export default function AgriculturalAIChatbot() {
           prev.map((session) =>
             session.id === currentSessionId
               ? {
-                ...session,
-                messages: [...session.messages, assistantMessage],
-                updatedAt: new Date(),
-              }
-              : session
-          )
+                  ...session,
+                  messages: [...session.messages, assistantMessage],
+                  updatedAt: new Date(),
+                }
+              : session,
+          ),
         );
       } catch (error) {
         console.error("Failed to get AI response:", error);
@@ -324,18 +322,18 @@ export default function AgriculturalAIChatbot() {
           prev.map((session) =>
             session.id === currentSessionId
               ? {
-                ...session,
-                messages: [...session.messages, errorMessage],
-                updatedAt: new Date(),
-              }
-              : session
-          )
+                  ...session,
+                  messages: [...session.messages, errorMessage],
+                  updatedAt: new Date(),
+                }
+              : session,
+          ),
         );
       } finally {
         setIsLoading(false);
       }
     },
-    [currentSessionId, createNewChat, selectedLanguage]
+    [currentSessionId, createNewChat, selectedLanguage],
   );
 
   const getAgentPresetMessage = (agentId?: string) => {
@@ -344,11 +342,12 @@ export default function AgriculturalAIChatbot() {
       "crop-yield": "What crop yield information are you looking for?",
       "fertilizer-recommendations": "What fertilizer details do you need?",
       "weather-advisory": "What weather information do you need?",
-      "crop-recommendations": "What type of crop recommendations are you seeking?",
+      "crop-recommendations":
+        "What type of crop recommendations are you seeking?",
       "irrigation-planning": "What type of irrigation are you planning?",
       "crop-health": "Describe the crop health issue you're observing",
       "pest-prediction": "What pest information do you need?",
-      "market-prices": "What market price information are you looking for?"
+      "market-prices": "What market price information are you looking for?",
     };
     return presets[agentId] || "";
   };

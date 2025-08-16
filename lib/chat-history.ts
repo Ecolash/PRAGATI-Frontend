@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import { PrismaClient } from "@prisma/client";
 import { ChatSession, ChatMessage } from "@/types/agriculture";
 
@@ -19,7 +18,7 @@ export interface ChatHistoryService {
   loadUserChatSessions(userId: number): Promise<ChatSession[]>;
   updateChatSession(
     sessionId: string,
-    data: Partial<SaveChatSessionData>
+    data: Partial<SaveChatSessionData>,
   ): Promise<void>;
   deleteChatSession(sessionId: string, userId: number): Promise<void>;
   addMessageToSession(sessionId: string, message: ChatMessage): Promise<void>;
@@ -118,7 +117,7 @@ class DatabaseChatHistoryService implements ChatHistoryService {
 
   async updateChatSession(
     sessionId: string,
-    data: Partial<SaveChatSessionData>
+    data: Partial<SaveChatSessionData>,
   ): Promise<void> {
     try {
       await prisma.chatSession.update({
@@ -153,7 +152,7 @@ class DatabaseChatHistoryService implements ChatHistoryService {
 
   async addMessageToSession(
     sessionId: string,
-    message: ChatMessage
+    message: ChatMessage,
   ): Promise<void> {
     try {
       await this.saveMessage(sessionId, message);
@@ -171,7 +170,7 @@ class DatabaseChatHistoryService implements ChatHistoryService {
 
   private async saveMessage(
     sessionId: string,
-    message: ChatMessage
+    message: ChatMessage,
   ): Promise<void> {
     try {
       await prisma.chatMessage.upsert({
@@ -181,7 +180,9 @@ class DatabaseChatHistoryService implements ChatHistoryService {
           language: message.language,
           translations: message.translations || {},
           metadata: message.metadata || {},
-          attachments: message.attachments || [],
+          attachments: message.attachments
+            ? JSON.parse(JSON.stringify(message.attachments))
+            : [],
           error: message.error,
         },
         create: {
@@ -192,7 +193,9 @@ class DatabaseChatHistoryService implements ChatHistoryService {
           language: message.language,
           translations: message.translations || {},
           metadata: message.metadata || {},
-          attachments: message.attachments || [],
+          attachments: message.attachments
+            ? JSON.parse(JSON.stringify(message.attachments))
+            : [],
           error: message.error,
           createdAt: message.timestamp,
         },
