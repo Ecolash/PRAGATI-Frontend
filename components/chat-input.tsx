@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 "use client";
 
 import { useState, useRef, KeyboardEvent, useEffect } from "react";
@@ -19,6 +20,7 @@ interface CleanChatInputProps {
   selectedLanguage: string;
   disabled?: boolean;
   placeholder?: string;
+  presetMessage?: string;
 }
 
 export function ChatInput({
@@ -27,11 +29,18 @@ export function ChatInput({
   selectedLanguage,
   disabled = false,
   placeholder = "Message PRAGATI...",
+  presetMessage,
 }: CleanChatInputProps) {
   const [message, setMessage] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (presetMessage && presetMessage !== message) {
+      setMessage(presetMessage);
+    }
+  }, [presetMessage]);
 
   const handleSend = () => {
     if (message.trim() || files.length > 0) {
@@ -165,7 +174,7 @@ export function ChatInput({
 
                 <AnimatedVoiceInput
                   onVoiceInputAction={handleVoiceInput}
-                  onSpeakActionToggleAction={() => {}}
+                  onSpeakActionToggleAction={() => { }}
                   selectedLanguage={selectedLanguage}
                   compact
                 />
@@ -228,7 +237,7 @@ export function ChatInput({
 
               <AnimatedVoiceInput
                 onVoiceInputAction={handleVoiceInput}
-                onSpeakActionToggleAction={() => {}}
+                onSpeakActionToggleAction={() => { }}
                 selectedLanguage={selectedLanguage}
                 compact
               />

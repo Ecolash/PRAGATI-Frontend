@@ -15,12 +15,14 @@ import { ChatSession, ChatMessage, Language } from "@/types/agriculture";
 import { agricultureAgents } from "@/data/agents";
 import { agriculturalAPI } from "@/lib/agricultural-api";
 import { useChatHistory } from "@/hooks/use-chat-history";
-
+import { Toggle } from "@/components/ui/toggle";
+import { Bot, Wrench } from "lucide-react";
 import { CropRecommendation } from "@/components/crop-recommendation";
 import { FertilizerRecommendation } from "@/components/fertilizer-recommendation";
 import { IrrigationCalendar } from "@/components/irrigation-calendar";
 import { CropDiseaseDetection } from "@/components/crop-disease-prediction";
 import { PestPrediction } from "@/components/pest-prediction";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 export default function AgriculturalAIChatbot() {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -28,6 +30,8 @@ export default function AgriculturalAIChatbot() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const [agentMode, setAgentMode] = useState(false);
+
 
   const { saveChatSession, loadChatHistory, isSaving } = useChatHistory();
 
@@ -109,6 +113,7 @@ export default function AgriculturalAIChatbot() {
 
   const selectAgent = useCallback(
     (agentId: string) => {
+      setAgentMode(false); // Reset to tool mode when selecting a new agent
       const agent = agricultureAgents.find((a) => a.id === agentId);
       if (agent) {
         const newSession: ChatSession = {
@@ -171,19 +176,19 @@ export default function AgriculturalAIChatbot() {
           prev.map((session) =>
             session.id === currentSessionId
               ? {
-                  ...session,
-                  messages: session.messages.map((msg) =>
-                    msg.id === messageId
-                      ? {
-                          ...msg,
-                          translations: {
-                            ...msg.translations,
-                            [targetLanguage]: translationResult.translated_text,
-                          },
-                        }
-                      : msg
-                  ),
-                }
+                ...session,
+                messages: session.messages.map((msg) =>
+                  msg.id === messageId
+                    ? {
+                      ...msg,
+                      translations: {
+                        ...msg.translations,
+                        [targetLanguage]: translationResult.translated_text,
+                      },
+                    }
+                    : msg
+                ),
+              }
               : session
           )
         );
@@ -195,19 +200,19 @@ export default function AgriculturalAIChatbot() {
           prev.map((session) =>
             session.id === currentSessionId
               ? {
-                  ...session,
-                  messages: session.messages.map((msg) =>
-                    msg.id === messageId
-                      ? {
-                          ...msg,
-                          translations: {
-                            ...msg.translations,
-                            [targetLanguage]: `[Translation unavailable] ${msg.content}`,
-                          },
-                        }
-                      : msg
-                  ),
-                }
+                ...session,
+                messages: session.messages.map((msg) =>
+                  msg.id === messageId
+                    ? {
+                      ...msg,
+                      translations: {
+                        ...msg.translations,
+                        [targetLanguage]: `[Translation unavailable] ${msg.content}`,
+                      },
+                    }
+                    : msg
+                ),
+              }
               : session
           )
         );
@@ -242,14 +247,14 @@ export default function AgriculturalAIChatbot() {
         prev.map((session) =>
           session.id === currentSessionId
             ? {
-                ...session,
-                messages: [...session.messages, userMessage],
-                title:
-                  session.messages.length === 0
-                    ? content.slice(0, 40) + "..."
-                    : session.title,
-                updatedAt: new Date(),
-              }
+              ...session,
+              messages: [...session.messages, userMessage],
+              title:
+                session.messages.length === 0
+                  ? content.slice(0, 40) + "..."
+                  : session.title,
+              updatedAt: new Date(),
+            }
             : session
         )
       );
@@ -290,10 +295,10 @@ export default function AgriculturalAIChatbot() {
           prev.map((session) =>
             session.id === currentSessionId
               ? {
-                  ...session,
-                  messages: [...session.messages, assistantMessage],
-                  updatedAt: new Date(),
-                }
+                ...session,
+                messages: [...session.messages, assistantMessage],
+                updatedAt: new Date(),
+              }
               : session
           )
         );
@@ -315,10 +320,10 @@ export default function AgriculturalAIChatbot() {
           prev.map((session) =>
             session.id === currentSessionId
               ? {
-                  ...session,
-                  messages: [...session.messages, errorMessage],
-                  updatedAt: new Date(),
-                }
+                ...session,
+                messages: [...session.messages, errorMessage],
+                updatedAt: new Date(),
+              }
               : session
           )
         );
@@ -329,10 +334,47 @@ export default function AgriculturalAIChatbot() {
     [currentSessionId, createNewChat, selectedLanguage]
   );
 
+  const getAgentPresetMessage = (agentId?: string) => {
+    if (!agentId) return "";
+    const presets: Record<string, string> = {
+      "crop-yield": "What crop yield information are you looking for?",
+      "fertilizer-recommendations": "What fertilizer details do you need?",
+      "weather-advisory": "What weather information do you need?",
+      "crop-recommendations": "What type of crop recommendations are you seeking?",
+      "irrigation-planning": "What type of irrigation are you planning?",
+      "crop-health": "Describe the crop health issue you're observing",
+      "pest-prediction": "What pest information do you need?",
+      "market-prices": "What market price information are you looking for?"
+    };
+    return presets[agentId] || "";
+  };
+
   // Minimal placeholder for specialised agents
   const renderAgentInterface = () => {
     if (!currentSession?.agent) return null;
 
+    // Show chat interface if in agent mode
+    if (agentMode) {
+      return (
+        <div className="flex flex-col flex-1 min-h-0">
+          <ChatMessages
+            messages={currentSession?.messages || []}
+            isLoading={isLoading}
+            onTranslateActionMessageAction={translateMessage}
+          />
+          <ChatInput
+            onSendMessageAction={sendMessage}
+            onLanguageChangeAction={handleLanguageChange}
+            selectedLanguage={selectedLanguage}
+            disabled={isLoading}
+            placeholder={getAgentPresetMessage(currentSession.agent.id)}
+            presetMessage={getAgentPresetMessage(currentSession.agent.id)}
+          />
+        </div>
+      );
+    }
+
+    // Otherwise show the tool interface
     switch (currentSession.agent.id) {
       case "crop-yield":
         return (
@@ -427,28 +469,30 @@ export default function AgriculturalAIChatbot() {
                 </>
               )}
             </div>
+            {currentSession?.agent && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Toggle
+                    pressed={agentMode}
+                    onPressedChange={setAgentMode}
+                    className="h-8 w-8 p-0 data-[state=on]:bg-emerald-100"
+                    aria-label="Toggle agent mode"
+                  >
+                    {agentMode ? (
+                      <Bot className="h-4 w-4 text-emerald-600" />
+                    ) : (
+                      <Wrench className="h-4 w-4 text-gray-600" />
+                    )}
+                  </Toggle>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {agentMode ? "Switch to tool mode" : "Switch to agent mode"}
+                </TooltipContent>
+              </Tooltip>
+            )}
           </header>
           <div className="flex flex-col flex-1 min-h-0">
-            {renderAgentInterface() || (
-              <>
-                <ChatMessages
-                  messages={currentSession?.messages || []}
-                  isLoading={isLoading}
-                  onTranslateActionMessageAction={translateMessage}
-                />
-                <ChatInput
-                  onSendMessageAction={sendMessage}
-                  onLanguageChangeAction={handleLanguageChange}
-                  selectedLanguage={selectedLanguage}
-                  disabled={isLoading}
-                  placeholder={
-                    currentSession?.agent
-                      ? `Ask about ${currentSession.agent.name.toLowerCase()}...`
-                      : "Message PRAGATI..."
-                  }
-                />
-              </>
-            )}
+            {renderAgentInterface()}
           </div>
         </SidebarInset>
       </div>
