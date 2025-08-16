@@ -23,6 +23,7 @@ import { IrrigationCalendar } from "@/components/irrigation-calendar";
 import { CropDiseaseDetection } from "@/components/crop-disease-prediction";
 import { PestPrediction } from "@/components/pest-prediction";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { Switch } from "./ui/switch";
 
 export default function AgriculturalAIChatbot() {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -470,29 +471,38 @@ export default function AgriculturalAIChatbot() {
               )}
             </div>
             {currentSession?.agent && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Toggle
-                    pressed={agentMode}
-                    onPressedChange={setAgentMode}
-                    className="h-8 w-8 p-0 data-[state=on]:bg-emerald-100"
-                    aria-label="Toggle agent mode"
-                  >
-                    {agentMode ? (
-                      <Bot className="h-4 w-4 text-emerald-600" />
-                    ) : (
-                      <Wrench className="h-4 w-4 text-gray-600" />
-                    )}
-                  </Toggle>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {agentMode ? "Switch to tool mode" : "Switch to agent mode"}
-                </TooltipContent>
-              </Tooltip>
+              <div className="flex items-center gap-2 ml-auto">
+                <span className="text-sm text-gray-600">Tool</span>
+                <Switch
+                  checked={agentMode}
+                  onCheckedChange={setAgentMode}
+                  className="data-[state=checked]:bg-emerald-600"
+                />
+                <span className="text-sm text-gray-600">Agent</span>
+              </div>
             )}
           </header>
           <div className="flex flex-col flex-1 min-h-0">
-            {renderAgentInterface()}
+            {renderAgentInterface() || (
+              <>
+                <ChatMessages
+                  messages={currentSession?.messages || []}
+                  isLoading={isLoading}
+                  onTranslateActionMessageAction={translateMessage}
+                />
+                <ChatInput
+                  onSendMessageAction={sendMessage}
+                  onLanguageChangeAction={handleLanguageChange}
+                  selectedLanguage={selectedLanguage}
+                  disabled={isLoading}
+                  placeholder={
+                    currentSession?.agent
+                      ? `Ask about ${currentSession.agent.name.toLowerCase()}...`
+                      : "Message PRAGATI..."
+                  }
+                />
+              </>
+            )}
           </div>
         </SidebarInset>
       </div>
