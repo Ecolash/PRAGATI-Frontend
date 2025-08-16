@@ -188,8 +188,8 @@ export default function AgriculturalAIChatbot() {
           )
         );
         //console.log("Translation stored successfully");
-      } catch (error) {
-        //console.error("Translation failed:", error);
+      } catch (error: any) {
+        console.error("Translation failed:", error);
         // Fallback to mock translation
         setChatSessions((prev) =>
           prev.map((session) =>
