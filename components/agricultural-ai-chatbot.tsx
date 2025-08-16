@@ -20,6 +20,7 @@ import { IrrigationCalendar } from "@/components/irrigation-calendar";
 import { CropDiseaseDetection } from "@/components/crop-disease-prediction";
 import { PestPrediction } from "@/components/pest-prediction";
 import { Switch } from "./ui/switch";
+import { Bot, Wrench } from "lucide-react";
 
 export default function AgriculturalAIChatbot() {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -476,13 +477,23 @@ export default function AgriculturalAIChatbot() {
             </div>
             {currentSession?.agent && (
               <div className="flex items-center gap-2 ml-auto">
-                <span className="text-sm text-gray-600">Tool</span>
+                {/* Tool label for md+ screens, icon for smaller */}
+                <span className="hidden sm:inline text-sm text-gray-600">
+                  Tool
+                </span>
+                <Wrench className="sm:hidden w-4 h-4 text-gray-600" />
+
                 <Switch
                   checked={agentMode}
                   onCheckedChange={setAgentMode}
                   className="data-[state=checked]:bg-emerald-600"
                 />
-                <span className="text-sm text-gray-600">Agent</span>
+
+                {/* Agent label for md+ screens, icon for smaller */}
+                <span className="hidden sm:inline text-sm text-gray-600">
+                  Agent
+                </span>
+                <Bot className="sm:hidden w-4 h-4 text-gray-600" />
               </div>
             )}
           </header>
