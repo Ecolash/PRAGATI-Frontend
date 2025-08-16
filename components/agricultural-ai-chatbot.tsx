@@ -15,14 +15,11 @@ import { ChatSession, ChatMessage, Language } from "@/types/agriculture";
 import { agricultureAgents } from "@/data/agents";
 import { agriculturalAPI } from "@/lib/agricultural-api";
 import { useChatHistory } from "@/hooks/use-chat-history";
-import { Toggle } from "@/components/ui/toggle";
-import { Bot, Wrench } from "lucide-react";
 import { CropRecommendation } from "@/components/crop-recommendation";
 import { FertilizerRecommendation } from "@/components/fertilizer-recommendation";
 import { IrrigationCalendar } from "@/components/irrigation-calendar";
 import { CropDiseaseDetection } from "@/components/crop-disease-prediction";
 import { PestPrediction } from "@/components/pest-prediction";
-import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { Switch } from "./ui/switch";
 
 export default function AgriculturalAIChatbot() {
@@ -40,6 +37,9 @@ export default function AgriculturalAIChatbot() {
     (session) => session.id === currentSessionId
   );
 
+  console.log("Current Session ID:", currentSessionId);
+  console.log("Current Session Agent:", currentSession?.agent?.id);
+
   // Load chat history on component mount
   useEffect(() => {
     const initializeChatHistory = async () => {
@@ -51,7 +51,7 @@ export default function AgriculturalAIChatbot() {
         if (history.length > 0) {
           setChatSessions(history);
           // Set the most recent session as current
-          setCurrentSessionId(history[0].id);
+          // setCurrentSessionId(history[0].id);
         } else {
           // Create initial session if no history exists
           createNewChat();
@@ -103,9 +103,11 @@ export default function AgriculturalAIChatbot() {
       createdAt: new Date(),
       updatedAt: new Date(),
       language: selectedLanguage,
+      agent: undefined,
     };
     setChatSessions((prev) => [newSession, ...prev]);
     setCurrentSessionId(newSession.id);
+    setAgentMode(false);
   }, [selectedLanguage, isLoadingHistory]);
 
   const selectSession = useCallback((sessionId: string) => {
@@ -114,6 +116,7 @@ export default function AgriculturalAIChatbot() {
 
   const selectAgent = useCallback(
     (agentId: string) => {
+      console.log("Selecting agent:", agentId);
       setAgentMode(false); // Reset to tool mode when selecting a new agent
       const agent = agricultureAgents.find((a) => a.id === agentId);
       if (agent) {
@@ -353,6 +356,8 @@ export default function AgriculturalAIChatbot() {
   // Minimal placeholder for specialised agents
   const renderAgentInterface = () => {
     if (!currentSession?.agent) return null;
+    const agentId = currentSession.agent.id;
+    if (!agentId) return null;
 
     // Show chat interface if in agent mode
     if (agentMode) {
