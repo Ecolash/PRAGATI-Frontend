@@ -33,6 +33,25 @@ export interface CropDiseaseDetectionResponse {
   error?: string;
 }
 
+export interface PestPredictionResponse {
+  success: boolean;
+  possible_pest_names?: string[];
+  description?: string;
+  pesticide_recommendation?: string;
+  error?: string;
+}
+
+export interface WebScrappingRequest {
+  query: string;
+}
+
+export interface WebScrappingResponse {
+  success: boolean;
+  data?: any;
+  sources?: string[];
+  error?: string;
+}
+
 class AgriculturalAPIService {
   private baseUrl: string;
 
@@ -198,6 +217,96 @@ class AgriculturalAPIService {
       return result;
     } catch (error) {
       console.error("Crop disease detection error:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Unknown error occurred",
+      };
+    }
+  }
+
+  async predictPest(
+    query: string,
+    imageFile?: File
+  ): Promise<PestPredictionResponse> {
+    try {
+      const formData = new FormData();
+      formData.append("query", query);
+
+      if (imageFile) {
+        formData.append("image", imageFile);
+      }
+
+      console.log("=== PEST PREDICTION DEBUG ===");
+      console.log("Query:", query);
+      if (imageFile) {
+        console.log("Image file:", imageFile.name, imageFile.size);
+      }
+      console.log("API URL:", `${this.baseUrl}/api/v1/pest/predict`);
+      console.log("============================");
+
+      const response = await fetch(`${this.baseUrl}/api/v1/pest/predict`, {
+        method: "POST",
+        body: formData,
+      });
+
+      console.log("Response Status:", response.status);
+      console.log("Response OK:", response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error Response Body:", errorText);
+        throw new Error(
+          `Pest prediction failed: ${response.status} - ${errorText}`
+        );
+      }
+
+      const result = await response.json();
+      console.log("API Response:", result);
+
+      return result;
+    } catch (error) {
+      console.error("Pest prediction error:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Unknown error occurred",
+      };
+    }
+  }
+
+  async scrapeWebData(query: string): Promise<WebScrappingResponse> {
+    try {
+      console.log("=== WEB SCRAPING DEBUG ===");
+      console.log("Query:", query);
+      console.log("API URL:", `${this.baseUrl}/api/v1/webscrap/scrape`);
+      console.log("==========================");
+
+      const response = await fetch(`${this.baseUrl}/api/v1/webscrap/scrape`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ query }),
+      });
+
+      console.log("Response Status:", response.status);
+      console.log("Response OK:", response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error Response Body:", errorText);
+        throw new Error(
+          `Web scraping failed: ${response.status} - ${errorText}`
+        );
+      }
+
+      const result = await response.json();
+      console.log("API Response:", result);
+
+      return result;
+    } catch (error) {
+      console.error("Web scraping error:", error);
       return {
         success: false,
         error:
