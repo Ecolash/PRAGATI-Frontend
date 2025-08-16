@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 "use client";
 
 import type React from "react";
@@ -12,8 +11,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Upload,
@@ -22,8 +25,9 @@ import {
   AlertTriangle,
   Info,
   X,
-  Shield,
   Stethoscope,
+  CheckCircle,
+  Activity,
 } from "lucide-react";
 import { SimpleCamera } from "./simple-camera";
 import { agriculturalAPI } from "@/lib/agricultural-api";
@@ -42,6 +46,7 @@ interface DiseaseAnalysisResponse {
 }
 
 const cropTypes = [
+  "Auto Detect",
   "Rice",
   "Maize",
   "Wheat",
@@ -59,15 +64,22 @@ const cropTypes = [
 ];
 
 const getSeverityColor = (probability: number): string => {
-  if (probability >= 0.8) return "bg-red-100 text-red-800";
-  if (probability >= 0.5) return "bg-yellow-100 text-yellow-800";
-  return "bg-green-100 text-green-800";
+  if (probability >= 80) return "bg-red-100 text-red-800 border-red-200";
+  if (probability >= 50)
+    return "bg-yellow-100 text-yellow-800 border-yellow-200";
+  return "bg-green-100 text-green-800 border-green-200";
 };
 
 const getSeverityLabel = (probability: number): string => {
-  if (probability >= 80) return "High Risk";
-  if (probability >= 50) return "Medium Risk";
-  return "Low Risk";
+  if (probability >= 80) return "High";
+  if (probability >= 50) return "Medium";
+  return "Low";
+};
+
+const getConfidenceColor = (probability: number): string => {
+  if (probability >= 80) return "text-red-600";
+  if (probability >= 60) return "text-yellow-600";
+  return "text-green-600";
 };
 
 export function CropDiseaseDetection() {
@@ -158,290 +170,308 @@ export function CropDiseaseDetection() {
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className="grid lg:grid-cols-5 gap-4 sm:gap-6">
           {/* Upload / Camera Section */}
-          <Card className="border-2 border-dashed border-green-200 bg-white/80 backdrop-blur-sm">
-            <CardHeader className="pb-3 sm:pb-6">
-              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                <Camera className="h-5 w-5 text-green-600" />
-                Capture or Upload Crop Image
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {showCamera ? (
-                <SimpleCamera
-                  onCapture={(dataUrl) => {
-                    setSelectedImage(dataUrl);
-                    // Convert dataUrl to File object for API upload
-                    fetch(dataUrl)
-                      .then((res) => res.blob())
-                      .then((blob) => {
-                        const file = new File([blob], "captured-image.jpg", {
-                          type: "image/jpeg",
+          <div className="lg:col-span-2">
+            <Card className="border-2 border-dashed border-green-200 bg-white/80 backdrop-blur-sm">
+              <CardHeader className="pb-3 sm:pb-6">
+                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                  <Camera className="h-5 w-5 text-green-600" />
+                  Capture or Upload Crop Image
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {showCamera ? (
+                  <SimpleCamera
+                    onCapture={(dataUrl) => {
+                      setSelectedImage(dataUrl);
+                      // Convert dataUrl to File object for API upload
+                      fetch(dataUrl)
+                        .then((res) => res.blob())
+                        .then((blob) => {
+                          const file = new File([blob], "captured-image.jpg", {
+                            type: "image/jpeg",
+                          });
+                          setSelectedFile(file);
                         });
-                        setSelectedFile(file);
-                      });
-                    setShowCamera(false);
-                    setAnalysisResult(null);
-                  }}
-                  onClose={() => setShowCamera(false)}
-                />
-              ) : (
-                <>
-                  {selectedImage && (
-                    <img
-                      src={selectedImage || "/placeholder.svg"}
-                      alt="Uploaded crop"
-                      className="max-h-32 sm:max-h-48 mx-auto rounded-lg shadow-md object-cover w-full"
-                    />
-                  )}
-                  <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="border-green-200 text-green-700 hover:bg-green-50"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload Image
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowCamera(true)}
-                      className="border-blue-200 text-blue-700 hover:bg-blue-50"
-                    >
-                      <Camera className="h-4 w-4 mr-2" />
-                      Take Photo
-                    </Button>
-                  </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileSelect}
-                    className="hidden"
+                      setShowCamera(false);
+                      setAnalysisResult(null);
+                    }}
+                    onClose={() => setShowCamera(false)}
                   />
-                </>
-              )}
-
-              {/* Crop Type Selection */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Select Crop Type
-                </label>
-                <Select value={selectedCrop} onValueChange={setSelectedCrop}>
-                  <SelectTrigger className="border-green-200 focus:border-green-400">
-                    <SelectValue placeholder="Choose your crop type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {cropTypes.map((crop) => (
-                      <SelectItem key={crop} value={crop}>
-                        {crop}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button
-                onClick={analyzeImage}
-                disabled={!selectedFile || isAnalyzing}
-                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
-              >
-                {isAnalyzing ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                    Analyzing Disease...
-                  </>
                 ) : (
                   <>
-                    <Stethoscope className="h-4 w-4 mr-2" />
-                    Analyze Disease
+                    {selectedImage && (
+                      <img
+                        src={selectedImage || "/placeholder.svg"}
+                        alt="Uploaded crop"
+                        className="max-h-32 sm:max-h-48 mx-auto rounded-lg shadow-md object-cover w-full"
+                      />
+                    )}
+                    <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="border-green-200 text-green-700 hover:bg-green-50"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Upload Image
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowCamera(true)}
+                        className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                      >
+                        <Camera className="h-4 w-4 mr-2" />
+                        Take Photo
+                      </Button>
+                    </div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
                   </>
                 )}
-              </Button>
 
-              {selectedImage && (
+                {/* Crop Type Selection */}
+                <div className="flex items-center gap-4">
+                  <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                    Select Crop Type
+                  </label>
+                  <Select
+                    value={selectedCrop}
+                    onValueChange={setSelectedCrop}
+                    defaultValue="Auto Detect"
+                  >
+                    <SelectTrigger className="border-green-200 focus:border-green-400 w-48">
+                      <SelectValue placeholder="Choose your crop type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cropTypes.map((crop) => (
+                        <SelectItem key={crop} value={crop}>
+                          {crop}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={resetAnalysis}
-                  className="w-full"
+                  onClick={analyzeImage}
+                  disabled={!selectedFile || isAnalyzing}
+                  className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
                 >
-                  <X className="h-4 w-4 mr-2" />
-                  Reset Analysis
+                  {isAnalyzing ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      Analyzing Disease...
+                    </>
+                  ) : (
+                    <>
+                      <Stethoscope className="h-4 w-4 mr-2" />
+                      Analyze Disease
+                    </>
+                  )}
                 </Button>
-              )}
 
-              <div className="text-center">
-                <p className="text-xs text-gray-500 mb-2">
-                  Capture an image to get disease detection results
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+                {selectedImage && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={resetAnalysis}
+                    className="w-full bg-transparent"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Reset Analysis
+                  </Button>
+                )}
 
-          {/* Results Section */}
-          <Card className="bg-white/80 backdrop-blur-sm">
-            <CardHeader className="pb-3 sm:pb-6">
-              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                <Stethoscope className="h-5 w-5 text-purple-600" />
-                Disease Analysis Results
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isAnalyzing ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4" />
-                  <p className="text-gray-600">Analyzing your crop image...</p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    This may take a few moments
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 mb-2">
+                    Capture an image to get disease detection results
                   </p>
                 </div>
-              ) : analysisResult ? (
-                <div className="space-y-4">
-                  {analysisResult.success ? (
-                    <>
-                      {/* Disease Detection */}
+              </CardContent>
+            </Card>
+          </div>
+          {/* Results Section */}
+          <div className="lg:col-span-3">
+            <Card className="bg-white/80 backdrop-blur-sm">
+              <CardHeader className="pb-3 sm:pb-6">
+                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                  <Activity className="h-5 w-5 text-purple-600" />
+                  Disease Analysis Results
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isAnalyzing ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4" />
+                    <p className="text-gray-600">
+                      Analyzing your crop image...
+                    </p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      This may take a few moments
+                    </p>
+                  </div>
+                ) : analysisResult ? (
+                  analysisResult.success ? (
+                    <Accordion
+                      type="single"
+                      defaultValue="diseases"
+                      className="w-full space-y-2"
+                    >
+                      {/* Diseases */}
                       {analysisResult.diseases &&
                         analysisResult.diseases.length > 0 && (
-                          <div>
-                            <h4 className="font-semibold text-sm text-gray-700 mb-2 flex items-center gap-2">
-                              <AlertTriangle className="h-4 w-4" />
-                              Detected Diseases
-                            </h4>
-                            <div className="space-y-2">
-                              {analysisResult.diseases.map((disease, index) => (
-                                <div
-                                  key={index}
-                                  className="flex items-center justify-between p-2 bg-gray-50 rounded"
-                                >
-                                  <span className="font-medium">{disease}</span>
-                                  {analysisResult.disease_probabilities?.[
-                                    index
-                                  ] && (
-                                    <div className="flex items-center gap-2">
-                                      <Progress
-                                        value={
-                                          analysisResult.disease_probabilities[
-                                            index
-                                          ] * 100
-                                        }
-                                        className="w-16 h-2"
-                                      />
-                                      <Badge
-                                        className={getSeverityColor(
-                                          analysisResult.disease_probabilities[
-                                            index
-                                          ]
-                                        )}
+                          <AccordionItem value="diseases">
+                            <AccordionTrigger>
+                              Detected Diseases (
+                              {analysisResult.diseases.length})
+                            </AccordionTrigger>
+                            <AccordionContent>
+                              <ul className="space-y-2">
+                                {analysisResult.diseases.map(
+                                  (disease, index) => {
+                                    const probability =
+                                      analysisResult.disease_probabilities?.[
+                                        index
+                                      ] || 0;
+                                    const isHealthy = disease
+                                      .toLowerCase()
+                                      .includes("healthy");
+                                    return (
+                                      <li
+                                        key={index}
+                                        className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
                                       >
-                                        {getSeverityLabel(
-                                          analysisResult.disease_probabilities[
-                                            index
-                                          ]
-                                        )}
-                                      </Badge>
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
+                                        <div className="flex items-center gap-2">
+                                          {isHealthy ? (
+                                            <CheckCircle className="h-4 w-4 text-green-600" />
+                                          ) : (
+                                            <AlertTriangle className="h-4 w-4 text-orange-600" />
+                                          )}
+                                          <span>{disease}</span>
+                                        </div>
+                                        <span
+                                          className={`text-xs font-semibold px-2 py-1 rounded-full border ${getSeverityColor(probability)}`}
+                                        >
+                                          {getSeverityLabel(probability)} •{" "}
+                                          <span
+                                            className={getConfidenceColor(
+                                              probability,
+                                            )}
+                                          >
+                                            {probability.toFixed(1)}%
+                                          </span>
+                                        </span>
+                                      </li>
+                                    );
+                                  },
+                                )}
+                              </ul>
+                            </AccordionContent>
+                          </AccordionItem>
                         )}
 
                       {/* Symptoms */}
                       {analysisResult.symptoms &&
                         analysisResult.symptoms.length > 0 && (
-                          <div>
-                            <h4 className="font-semibold text-sm text-gray-700 mb-2 flex items-center gap-2">
-                              <Info className="h-4 w-4" />
+                          <AccordionItem value="symptoms">
+                            <AccordionTrigger>
                               Observed Symptoms
-                            </h4>
-                            <ul className="space-y-1 text-sm">
-                              {analysisResult.symptoms.map((symptom, index) => (
-                                <li
-                                  key={index}
-                                  className="flex items-start gap-2"
-                                >
-                                  <span className="w-1 h-1 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
-                                  {symptom}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
+                            </AccordionTrigger>
+                            <AccordionContent>
+                              <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
+                                {analysisResult.symptoms.map(
+                                  (symptom, index) => (
+                                    <li key={index}>{symptom}</li>
+                                  ),
+                                )}
+                              </ul>
+                            </AccordionContent>
+                          </AccordionItem>
                         )}
 
                       {/* Treatments */}
                       {analysisResult.treatments &&
                         analysisResult.treatments.length > 0 && (
-                          <div>
-                            <h4 className="font-semibold text-sm text-gray-700 mb-2 flex items-center gap-2">
-                              <Stethoscope className="h-4 w-4" />
+                          <AccordionItem value="treatments">
+                            <AccordionTrigger>
                               Recommended Treatments
-                            </h4>
-                            <ul className="space-y-1 text-sm">
-                              {analysisResult.treatments.map(
-                                (treatment, index) => (
-                                  <li
-                                    key={index}
-                                    className="flex items-start gap-2"
-                                  >
-                                    <span className="w-1 h-1 bg-green-500 rounded-full mt-2 flex-shrink-0" />
-                                    {treatment}
-                                  </li>
-                                )
-                              )}
-                            </ul>
-                          </div>
+                            </AccordionTrigger>
+                            <AccordionContent>
+                              <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
+                                {analysisResult.treatments.map(
+                                  (treatment, index) => (
+                                    <li key={index}>{treatment}</li>
+                                  ),
+                                )}
+                              </ul>
+                            </AccordionContent>
+                          </AccordionItem>
                         )}
 
-                      {/* Prevention Tips */}
+                      {/* Prevention */}
                       {analysisResult.prevention_tips &&
                         analysisResult.prevention_tips.length > 0 && (
-                          <div>
-                            <h4 className="font-semibold text-sm text-gray-700 mb-2 flex items-center gap-2">
-                              <Shield className="h-4 w-4" />
-                              Prevention Tips
-                            </h4>
-                            <ul className="space-y-1 text-sm">
-                              {analysisResult.prevention_tips.map(
-                                (tip, index) => (
-                                  <li
-                                    key={index}
-                                    className="flex items-start gap-2"
-                                  >
-                                    <span className="w-1 h-1 bg-yellow-500 rounded-full mt-2 flex-shrink-0" />
-                                    {tip}
-                                  </li>
-                                )
-                              )}
-                            </ul>
-                          </div>
+                          <AccordionItem value="prevention">
+                            <AccordionTrigger>Prevention Tips</AccordionTrigger>
+                            <AccordionContent>
+                              <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
+                                {analysisResult.prevention_tips.map(
+                                  (tip, index) => (
+                                    <li key={index}>{tip}</li>
+                                  ),
+                                )}
+                              </ul>
+                            </AccordionContent>
+                          </AccordionItem>
                         )}
-                    </>
+
+                      {/* Summary */}
+                      <AccordionItem value="summary">
+                        <AccordionTrigger>Analysis Summary</AccordionTrigger>
+                        <AccordionContent>
+                          <p className="text-sm text-gray-700">
+                            {analysisResult.diseases?.length || 0} condition(s)
+                            identified.
+                          </p>
+                          {analysisResult.image_path && (
+                            <p className="text-xs text-gray-500">
+                              Image:{" "}
+                              {analysisResult.image_path.split("/").pop()}
+                            </p>
+                          )}
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
                   ) : (
-                    <Alert>
-                      <AlertTriangle className="h-4 w-4" />
-                      <AlertDescription>
+                    <Alert className="border-red-200 bg-red-50">
+                      <AlertTriangle className="h-4 w-4 text-red-600" />
+                      <AlertDescription className="text-red-800">
                         {analysisResult.error ||
                           "Analysis failed. Please try again with a different image."}
                       </AlertDescription>
                     </Alert>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <Leaf className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-                  <p className="text-lg font-medium">No Analysis Yet</p>
-                  <p className="text-sm">
-                    Upload a crop image to get AI-powered disease detection
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  )
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Leaf className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                    <p className="text-lg font-medium">No Analysis Yet</p>
+                    <p className="text-sm">
+                      Upload a crop image to get AI-powered detection
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         <Alert className="border-blue-200 bg-blue-50">

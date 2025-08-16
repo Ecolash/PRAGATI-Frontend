@@ -32,6 +32,7 @@ import {
 } from "@/lib/agricultural-api";
 
 const cropTypes = [
+  "Auto Detect",
   "Rice",
   "Maize",
   "Wheat",
