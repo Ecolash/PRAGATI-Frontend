@@ -23,6 +23,7 @@ import { Switch } from "./ui/switch";
 import { Bot, Wrench } from "lucide-react";
 import { WeatherForecast } from "@/components/weather-forecast";
 import { CropYieldPredictor } from "@/components/crop-yield-predictor";
+import { AgriculturalNewsFeed } from "@/components/agricultural-news-feed";
 
 export default function AgriculturalAIChatbot() {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -400,18 +401,13 @@ export default function AgriculturalAIChatbot() {
         return <CropDiseaseDetection />;
       case "pest-prediction":
         return <PestPrediction />;
+      case "price-forecasting":
       case "market-prices":
-        return (
-          <div className="p-4 text-center text-gray-500 text-lg">
-            Market Prices Agent Page
-          </div>
-        );
+        return null;
+      case "agriculture-news":
+        return <AgriculturalNewsFeed />;
       default:
-        return (
-          <div className="p-4 text-center text-gray-500 text-lg">
-            Unknown Agent Page
-          </div>
-        );
+        return null;
     }
   };
 

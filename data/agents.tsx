@@ -19,7 +19,7 @@ export const agricultureAgents: AgricultureAgent[] = [
     description: "Predict crop yields based on various factors",
     icon: <TrendingUp className="h-4 w-4" />,
     category: "prediction",
-    color: "text-emerald-600",
+    color: "text-pink-600",
     mode: "both",
   },
   {
