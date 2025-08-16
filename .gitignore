@@ -45,3 +45,5 @@ generated/
 # Optional: Ignore temporary files
 *.tmp
 *.temp
+
+bun.lock

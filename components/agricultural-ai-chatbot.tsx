@@ -15,12 +15,12 @@ import { ChatSession, ChatMessage, Language } from "@/types/agriculture";
 import { agricultureAgents } from "@/data/agents";
 import { agriculturalAPI } from "@/lib/agricultural-api";
 import { useChatHistory } from "@/hooks/use-chat-history";
-
 import { CropRecommendation } from "@/components/crop-recommendation";
 import { FertilizerRecommendation } from "@/components/fertilizer-recommendation";
 import { IrrigationCalendar } from "@/components/irrigation-calendar";
 import { CropDiseaseDetection } from "@/components/crop-disease-prediction";
 import { PestPrediction } from "@/components/pest-prediction";
+import { Switch } from "./ui/switch";
 
 export default function AgriculturalAIChatbot() {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -28,12 +28,17 @@ export default function AgriculturalAIChatbot() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const [agentMode, setAgentMode] = useState(false);
+
 
   const { saveChatSession, loadChatHistory, isSaving } = useChatHistory();
 
   const currentSession = chatSessions.find(
     (session) => session.id === currentSessionId
   );
+
+  console.log("Current Session ID:", currentSessionId);
+  console.log("Current Session Agent:", currentSession?.agent?.id);
 
   // Load chat history on component mount
   useEffect(() => {
@@ -46,7 +51,7 @@ export default function AgriculturalAIChatbot() {
         if (history.length > 0) {
           setChatSessions(history);
           // Set the most recent session as current
-          setCurrentSessionId(history[0].id);
+          // setCurrentSessionId(history[0].id);
         } else {
           // Create initial session if no history exists
           createNewChat();
@@ -98,9 +103,11 @@ export default function AgriculturalAIChatbot() {
       createdAt: new Date(),
       updatedAt: new Date(),
       language: selectedLanguage,
+      agent: undefined,
     };
     setChatSessions((prev) => [newSession, ...prev]);
     setCurrentSessionId(newSession.id);
+    setAgentMode(false);
   }, [selectedLanguage, isLoadingHistory]);
 
   const selectSession = useCallback((sessionId: string) => {
@@ -109,6 +116,8 @@ export default function AgriculturalAIChatbot() {
 
   const selectAgent = useCallback(
     (agentId: string) => {
+      console.log("Selecting agent:", agentId);
+      setAgentMode(false); // Reset to tool mode when selecting a new agent
       const agent = agricultureAgents.find((a) => a.id === agentId);
       if (agent) {
         const newSession: ChatSession = {
@@ -171,19 +180,19 @@ export default function AgriculturalAIChatbot() {
           prev.map((session) =>
             session.id === currentSessionId
               ? {
-                  ...session,
-                  messages: session.messages.map((msg) =>
-                    msg.id === messageId
-                      ? {
-                          ...msg,
-                          translations: {
-                            ...msg.translations,
-                            [targetLanguage]: translationResult.translated_text,
-                          },
-                        }
-                      : msg
-                  ),
-                }
+                ...session,
+                messages: session.messages.map((msg) =>
+                  msg.id === messageId
+                    ? {
+                      ...msg,
+                      translations: {
+                        ...msg.translations,
+                        [targetLanguage]: translationResult.translated_text,
+                      },
+                    }
+                    : msg
+                ),
+              }
               : session
           )
         );
@@ -195,19 +204,19 @@ export default function AgriculturalAIChatbot() {
           prev.map((session) =>
             session.id === currentSessionId
               ? {
-                  ...session,
-                  messages: session.messages.map((msg) =>
-                    msg.id === messageId
-                      ? {
-                          ...msg,
-                          translations: {
-                            ...msg.translations,
-                            [targetLanguage]: `[Translation unavailable] ${msg.content}`,
-                          },
-                        }
-                      : msg
-                  ),
-                }
+                ...session,
+                messages: session.messages.map((msg) =>
+                  msg.id === messageId
+                    ? {
+                      ...msg,
+                      translations: {
+                        ...msg.translations,
+                        [targetLanguage]: `[Translation unavailable] ${msg.content}`,
+                      },
+                    }
+                    : msg
+                ),
+              }
               : session
           )
         );
@@ -242,14 +251,14 @@ export default function AgriculturalAIChatbot() {
         prev.map((session) =>
           session.id === currentSessionId
             ? {
-                ...session,
-                messages: [...session.messages, userMessage],
-                title:
-                  session.messages.length === 0
-                    ? content.slice(0, 40) + "..."
-                    : session.title,
-                updatedAt: new Date(),
-              }
+              ...session,
+              messages: [...session.messages, userMessage],
+              title:
+                session.messages.length === 0
+                  ? content.slice(0, 40) + "..."
+                  : session.title,
+              updatedAt: new Date(),
+            }
             : session
         )
       );
@@ -290,10 +299,10 @@ export default function AgriculturalAIChatbot() {
           prev.map((session) =>
             session.id === currentSessionId
               ? {
-                  ...session,
-                  messages: [...session.messages, assistantMessage],
-                  updatedAt: new Date(),
-                }
+                ...session,
+                messages: [...session.messages, assistantMessage],
+                updatedAt: new Date(),
+              }
               : session
           )
         );
@@ -315,10 +324,10 @@ export default function AgriculturalAIChatbot() {
           prev.map((session) =>
             session.id === currentSessionId
               ? {
-                  ...session,
-                  messages: [...session.messages, errorMessage],
-                  updatedAt: new Date(),
-                }
+                ...session,
+                messages: [...session.messages, errorMessage],
+                updatedAt: new Date(),
+              }
               : session
           )
         );
@@ -329,10 +338,49 @@ export default function AgriculturalAIChatbot() {
     [currentSessionId, createNewChat, selectedLanguage]
   );
 
+  const getAgentPresetMessage = (agentId?: string) => {
+    if (!agentId) return "";
+    const presets: Record<string, string> = {
+      "crop-yield": "What crop yield information are you looking for?",
+      "fertilizer-recommendations": "What fertilizer details do you need?",
+      "weather-advisory": "What weather information do you need?",
+      "crop-recommendations": "What type of crop recommendations are you seeking?",
+      "irrigation-planning": "What type of irrigation are you planning?",
+      "crop-health": "Describe the crop health issue you're observing",
+      "pest-prediction": "What pest information do you need?",
+      "market-prices": "What market price information are you looking for?"
+    };
+    return presets[agentId] || "";
+  };
+
   // Minimal placeholder for specialised agents
   const renderAgentInterface = () => {
     if (!currentSession?.agent) return null;
+    const agentId = currentSession.agent.id;
+    if (!agentId) return null;
 
+    // Show chat interface if in agent mode
+    if (agentMode) {
+      return (
+        <div className="flex flex-col flex-1 min-h-0">
+          <ChatMessages
+            messages={currentSession?.messages || []}
+            isLoading={isLoading}
+            onTranslateActionMessageAction={translateMessage}
+          />
+          <ChatInput
+            onSendMessageAction={sendMessage}
+            onLanguageChangeAction={handleLanguageChange}
+            selectedLanguage={selectedLanguage}
+            disabled={isLoading}
+            placeholder={getAgentPresetMessage(currentSession.agent.id)}
+            presetMessage={getAgentPresetMessage(currentSession.agent.id)}
+          />
+        </div>
+      );
+    }
+
+    // Otherwise show the tool interface
     switch (currentSession.agent.id) {
       case "crop-yield":
         return (
@@ -427,6 +475,17 @@ export default function AgriculturalAIChatbot() {
                 </>
               )}
             </div>
+            {currentSession?.agent && (
+              <div className="flex items-center gap-2 ml-auto">
+                <span className="text-sm text-gray-600">Tool</span>
+                <Switch
+                  checked={agentMode}
+                  onCheckedChange={setAgentMode}
+                  className="data-[state=checked]:bg-emerald-600"
+                />
+                <span className="text-sm text-gray-600">Agent</span>
+              </div>
+            )}
           </header>
           <div className="flex flex-col flex-1 min-h-0">
             {renderAgentInterface() || (
