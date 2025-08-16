@@ -22,6 +22,7 @@ import { PestPrediction } from "@/components/pest-prediction";
 import { Switch } from "./ui/switch";
 import { Bot, Wrench } from "lucide-react";
 import { WeatherForecast } from "@/components/weather-forecast";
+import { CropYieldPredictor } from "@/components/crop-yield-predictor";
 
 export default function AgriculturalAIChatbot() {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -384,11 +385,7 @@ export default function AgriculturalAIChatbot() {
     // Otherwise show the tool interface
     switch (currentSession.agent.id) {
       case "crop-yield":
-        return (
-          <div className="p-4 text-center text-gray-500 text-lg">
-            Crop Yield Agent Page
-          </div>
-        );
+        return <CropYieldPredictor />;
       case "fertilizer-recommendations":
         return <FertilizerRecommendation />;
       case "weather-advisory":
