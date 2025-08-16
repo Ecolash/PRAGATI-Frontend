@@ -21,6 +21,7 @@ import { CropDiseaseDetection } from "@/components/crop-disease-prediction";
 import { PestPrediction } from "@/components/pest-prediction";
 import { Switch } from "./ui/switch";
 import { Bot, Wrench } from "lucide-react";
+import { WeatherForecast } from "@/components/weather-forecast";
 
 export default function AgriculturalAIChatbot() {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -391,11 +392,7 @@ export default function AgriculturalAIChatbot() {
       case "fertilizer-recommendations":
         return <FertilizerRecommendation />;
       case "weather-advisory":
-        return (
-          <div className="p-4 text-center text-gray-500 text-lg">
-            Weather Advisory Agent Page
-          </div>
-        );
+        return <WeatherForecast />;
       case "crop-recommendations":
         return <CropRecommendation />;
       case "irrigation-planning":
