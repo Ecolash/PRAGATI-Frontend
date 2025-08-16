@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 "use client";
 
 import type React from "react";
@@ -28,6 +29,7 @@ import {
   Sprout,
 } from "lucide-react";
 import { fertilizerMetadata } from "@/components/lib/fertilizer-metadata";
+import { agriculturalAPI } from "@/lib/agricultural-api";
 import {
   Bar,
   BarChart,
@@ -46,10 +48,10 @@ interface FertilizerRecommendation {
 
 interface ApiResponse {
   success: boolean;
-  recommended_fertilizer: string;
-  confidence: number;
-  top_3_recommendations: FertilizerRecommendation[];
-  input_parameters: {
+  recommended_fertilizer?: string;
+  confidence?: number;
+  top_3_recommendations?: Array<[string, number]>; // [fertilizer_name, confidence]
+  input_parameters?: {
     temperature: number;
     humidity: number;
     moisture: number;
@@ -59,6 +61,8 @@ interface ApiResponse {
     potassium: number;
     phosphorous: number;
   };
+  validation_errors?: string[];
+  error?: string;
 }
 
 interface FormData {
@@ -151,8 +155,9 @@ export function FertilizerRecommendation() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [recommendations, setRecommendations] = useState<ApiResponse | null>(
-    null,
+    null
   );
 
   const handleSliderChange = (field: keyof FormData, value: number[]) => {
@@ -163,33 +168,71 @@ export function FertilizerRecommendation() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const simulateApiCall = async (): Promise<ApiResponse> => {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+  const getFertilizerRecommendation = async (): Promise<ApiResponse> => {
+    try {
+      const response = await agriculturalAPI.getFertilizerRecommendation({
+        temperature: formData.temperature,
+        humidity: formData.humidity,
+        moisture: formData.moisture,
+        soil_type: formData.soil_type,
+        crop_type: formData.crop_type,
+        nitrogen: formData.nitrogen,
+        potassium: formData.potassium,
+        phosphorous: formData.phosphorous,
+      });
 
-    const mockFerts = ["Urea", "DAP", "17-17-17", "10-26-26"];
-    const mockProbs = [0.89, 0.75, 0.68, 0.54];
+      console.log("getFertilizerRecommendation - Raw API response:", response);
+      console.log(
+        "getFertilizerRecommendation - Response type:",
+        typeof response
+      );
 
-    return {
-      success: true,
-      recommended_fertilizer: mockFerts[0],
-      confidence: mockProbs[0],
-      top_3_recommendations: mockFerts.map((fert, index) => ({
-        fertilizer: fert,
-        confidence: mockProbs[index],
-        confidence_percentage: Math.round(mockProbs[index] * 100 * 100) / 100,
-      })),
-      input_parameters: formData,
-    };
+      // If response is still a string, parse it
+      if (typeof response === "string") {
+        console.log("Response is still a string, parsing...");
+        const parsedResponse = JSON.parse(response);
+        console.log("Parsed response:", parsedResponse);
+        return parsedResponse;
+      }
+
+      return response;
+    } catch (error) {
+      console.error("Fertilizer recommendation API error:", error);
+      throw error;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     try {
-      const response = await simulateApiCall();
-      setRecommendations(response);
+      const response = await getFertilizerRecommendation();
+
+      if (!response.success) {
+        if (
+          response.validation_errors &&
+          response.validation_errors.length > 0
+        ) {
+          setError(
+            "Validation errors: " + response.validation_errors.join(", ")
+          );
+        } else if (response.error) {
+          setError(response.error);
+        } else {
+          setError("Failed to get fertilizer recommendations");
+        }
+        setRecommendations(null);
+      } else {
+        setRecommendations(response);
+      }
     } catch (error) {
       console.error("Error getting recommendations:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to get fertilizer recommendations. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -202,10 +245,10 @@ export function FertilizerRecommendation() {
   };
 
   const chartData =
-    recommendations?.top_3_recommendations.map((rec) => ({
-      name: rec.fertilizer,
-      confidence: rec.confidence_percentage,
-      emoji: fertilizerMetadata[rec.fertilizer]?.emoji || "🧪",
+    recommendations?.top_3_recommendations?.map((rec) => ({
+      name: rec[0], // fertilizer name
+      confidence: Math.round(rec[1] * 100 * 100) / 100, // confidence percentage
+      emoji: fertilizerMetadata[rec[0]]?.emoji || "🧪",
     })) || [];
 
   return (
@@ -330,6 +373,14 @@ export function FertilizerRecommendation() {
                   </Select>
                 </div>
 
+                {/* Error Display */}
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                    <p className="text-sm font-medium">Error</p>
+                    <p className="text-xs mt-1">{error}</p>
+                  </div>
+                )}
+
                 {/* Submit Button */}
                 <Button
                   type="submit"
@@ -353,32 +404,36 @@ export function FertilizerRecommendation() {
           </Card>
 
           {/* Results */}
-          {recommendations && (
+          {recommendations && recommendations.success && (
             <>
               {/* Main Recommendation */}
               <Card className="shadow-xl border-0 bg-gradient-to-br from-green-500 to-emerald-600 text-white lg:col-span-2 lg:row-span-1">
                 <CardContent className="p-4 text-center">
                   <div className="text-6xl mb-2">
-                    {fertilizerMetadata[recommendations.recommended_fertilizer]
-                      ?.emoji || "🧪"}
+                    {fertilizerMetadata[
+                      recommendations.recommended_fertilizer || ""
+                    ]?.emoji || "🧪"}
                   </div>
                   <h2 className="text-2xl font-bold mb-2">
-                    {recommendations.recommended_fertilizer}
+                    {recommendations.recommended_fertilizer || "Unknown"}
                   </h2>
                   <Badge className="bg-white/20 text-white border-white/30 text-lg px-4 py-2 mb-3">
-                    {Math.round(recommendations.confidence * 10000) / 100}%
-                    Match
+                    {Math.round((recommendations.confidence || 0) * 10000) /
+                      100}
+                    % Match
                   </Badge>
                   <p className="text-sm mb-2">
                     {
-                      fertilizerMetadata[recommendations.recommended_fertilizer]
-                        ?.description
+                      fertilizerMetadata[
+                        recommendations.recommended_fertilizer || ""
+                      ]?.description
                     }
                   </p>
                   <p className="text-green-50 text-xs italic">
                     {
-                      fertilizerMetadata[recommendations.recommended_fertilizer]
-                        ?.application
+                      fertilizerMetadata[
+                        recommendations.recommended_fertilizer || ""
+                      ]?.application
                     }
                   </p>
                 </CardContent>

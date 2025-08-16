@@ -1,9 +1,11 @@
+/* eslint-disable prettier/prettier */
 "use client";
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { agriculturalAPI } from "@/lib/agricultural-api";
 import {
   MapPin,
   Cloud,
@@ -81,7 +83,7 @@ interface WeatherResponse {
 
 export function WeatherForecast() {
   const [location, setLocation] = useState<{ lat: number; lon: number } | null>(
-    null,
+    null
   );
   const [weatherData, setWeatherData] = useState<WeatherResponse | null>(null);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
@@ -112,7 +114,7 @@ export function WeatherForecast() {
         setError(`Location error: ${error.message}`);
         setIsLoadingLocation(false);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
   };
 
@@ -126,55 +128,53 @@ export function WeatherForecast() {
     setError(null);
 
     try {
-      // Mock API call - replace with your actual weather API endpoint
-      await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulate API delay
+      console.log(
+        "Fetching weather forecast for coordinates:",
+        location.lat,
+        location.lon
+      );
 
-      // Mock response based on the provided schema
-      const mockWeatherData: WeatherResponse = {
-        location: {
-          latitude: location.lat,
-          longitude: location.lon,
-          timezone: "Auto-detected",
-        },
-        forecast_days: [
-          {
-            date: new Date().toISOString().split("T")[0],
-            temperatures_celsius: { max: 28, min: 22 },
-            humidity_percent: { daytime: 65, nighttime: 80 },
-            precipitation: { sum_mm: 2.5, probability_percent: 30 },
-            thunderstorm_probability_percent: 20,
-            wind_kmh: { speed_max: 15, gust_max: 25 },
-            cloud_cover_percent: 60,
-            uv_index_max: 6,
-            max_heat_index_celsius: 32,
-            sun_events: {
-              sunrise: new Date().toISOString(),
-              sunset: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
-            },
-          },
-          {
-            date: new Date(Date.now() + 24 * 60 * 60 * 1000)
-              .toISOString()
-              .split("T")[0],
-            temperatures_celsius: { max: 30, min: 24 },
-            humidity_percent: { daytime: 70, nighttime: 85 },
-            precipitation: { sum_mm: 5.2, probability_percent: 60 },
-            thunderstorm_probability_percent: 40,
-            wind_kmh: { speed_max: 18, gust_max: 30 },
-            cloud_cover_percent: 80,
-            uv_index_max: 5,
-            max_heat_index_celsius: 35,
-            sun_events: {
-              sunrise: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-              sunset: new Date(Date.now() + 36 * 60 * 60 * 1000).toISOString(),
-            },
-          },
-        ],
-      };
+      // Call the weather forecast tool API with coordinates
+      const result = await agriculturalAPI.getWeatherForecast(
+        location.lat,
+        location.lon
+      );
 
-      setWeatherData(mockWeatherData);
+      if (result.success && result.response) {
+        // The tool returns structured weather data, not text
+        console.log("Weather forecast response:", result.response);
+
+        // Parse the response and use the real weather data
+        let weatherData: WeatherResponse;
+
+        try {
+          // If result.response is a string, parse it. If it's already an object, use it directly
+          const parsedData =
+            typeof result.response === "string"
+              ? JSON.parse(result.response)
+              : result.response;
+
+          // The tool returns the exact structure we need
+          weatherData = {
+            location: parsedData.location,
+            forecast_days: parsedData.forecast_days,
+          };
+
+          console.log("Processed weather data:", weatherData);
+          setWeatherData(weatherData);
+        } catch (parseError) {
+          console.error("Error parsing weather data:", parseError);
+          throw new Error("Failed to parse weather forecast data");
+        }
+      } else {
+        throw new Error(result.error || "Failed to get weather forecast");
+      }
     } catch (err) {
-      setError("Failed to fetch weather data" + err);
+      console.error("Weather forecast error:", err);
+      setError(
+        "Failed to fetch weather data: " +
+          (err instanceof Error ? err.message : "Unknown error")
+      );
     } finally {
       setIsLoadingWeather(false);
     }
@@ -650,7 +650,7 @@ export function WeatherForecast() {
                     {currentDayIndex === 0
                       ? "Today"
                       : formatDate(
-                          weatherData.forecast_days[currentDayIndex].date,
+                          weatherData.forecast_days[currentDayIndex].date
                         )}
                   </div>
                   <div className="text-xs text-gray-500">
@@ -681,7 +681,7 @@ export function WeatherForecast() {
                         {currentDayIndex === 0
                           ? "Today"
                           : formatDate(
-                              weatherData.forecast_days[currentDayIndex].date,
+                              weatherData.forecast_days[currentDayIndex].date
                             )}
                       </CardTitle>
                       <p className="text-sm text-gray-500 mt-1">
@@ -690,7 +690,7 @@ export function WeatherForecast() {
                     </div>
                     <div className="flex-shrink-0">
                       {getWeatherIcon(
-                        weatherData.forecast_days[currentDayIndex],
+                        weatherData.forecast_days[currentDayIndex]
                       )}
                     </div>
                   </div>
@@ -710,7 +710,7 @@ export function WeatherForecast() {
                         <div className="text-3xl font-bold text-gray-900">
                           {Math.round(
                             weatherData.forecast_days[currentDayIndex]
-                              .temperatures_celsius.max,
+                              .temperatures_celsius.max
                           )}
                           °C
                         </div>
@@ -718,7 +718,7 @@ export function WeatherForecast() {
                           Low:{" "}
                           {Math.round(
                             weatherData.forecast_days[currentDayIndex]
-                              .temperatures_celsius.min,
+                              .temperatures_celsius.min
                           )}
                           °C
                         </div>
@@ -834,7 +834,7 @@ export function WeatherForecast() {
                         <span className="font-medium text-gray-700">
                           {formatTime(
                             weatherData.forecast_days[currentDayIndex]
-                              .sun_events.sunrise,
+                              .sun_events.sunrise
                           )}
                         </span>
                       </div>
@@ -843,7 +843,7 @@ export function WeatherForecast() {
                         <span className="font-medium text-gray-700">
                           {formatTime(
                             weatherData.forecast_days[currentDayIndex]
-                              .sun_events.sunset,
+                              .sun_events.sunset
                           )}
                         </span>
                       </div>

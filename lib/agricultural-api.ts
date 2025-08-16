@@ -52,6 +52,84 @@ export interface WebScrappingResponse {
   error?: string;
 }
 
+export interface WeatherForecastRequest {
+  latitude: number;
+  longitude: number;
+}
+
+export interface WeatherForecastResponse {
+  success: boolean;
+  response?: any; // The structured weather data from the tool
+  error?: string;
+}
+
+export interface CropRecommendationRequest {
+  N: number;
+  P: number;
+  K: number;
+  temperature: number;
+  humidity: number;
+  ph: number;
+  rainfall: number;
+  model_type?: string;
+}
+
+export interface CropRecommendationResponse {
+  status: string;
+  model_used: string;
+  input_parameters: {
+    nitrogen: number;
+    phosphorus: number;
+    potassium: number;
+    temperature: number;
+    humidity: number;
+    ph: number;
+    rainfall: number;
+  };
+  predictions: {
+    recommended_crop: string;
+    top_5_recommendations: Array<{
+      crop: string;
+      confidence_score: number;
+      confidence_percentage: number;
+    }>;
+  };
+  metadata: {
+    total_classes: number;
+    prediction_timestamp: string;
+  };
+}
+
+export interface FertilizerRecommendationRequest {
+  temperature: number;
+  humidity: number;
+  moisture: number;
+  soil_type: string;
+  crop_type: string;
+  nitrogen: number;
+  potassium: number;
+  phosphorous: number;
+}
+
+export interface FertilizerRecommendationResponse {
+  success: boolean;
+  recommended_fertilizer?: string;
+  confidence?: number;
+  top_3_recommendations?: Array<[string, number]>; // [fertilizer_name, confidence]
+  input_parameters?: {
+    temperature: number;
+    humidity: number;
+    moisture: number;
+    soil_type: string;
+    crop_type: string;
+    nitrogen: number;
+    potassium: number;
+    phosphorous: number;
+  };
+  validation_errors?: string[];
+  error?: string;
+}
+
 class AgriculturalAPIService {
   private baseUrl: string;
 
@@ -312,6 +390,191 @@ class AgriculturalAPIService {
         error:
           error instanceof Error ? error.message : "Unknown error occurred",
       };
+    }
+  }
+
+  async getWeatherForecast(
+    latitude: number,
+    longitude: number
+  ): Promise<WeatherForecastResponse> {
+    try {
+      console.log("=== WEATHER FORECAST TOOL DEBUG ===");
+      console.log("Latitude:", latitude);
+      console.log("Longitude:", longitude);
+
+      // Build URL with query parameters
+      const url = new URL(`${this.baseUrl}/api/v1/weather/forecast-tool`);
+      url.searchParams.append("latitude", latitude.toString());
+      url.searchParams.append("longitude", longitude.toString());
+
+      console.log("API URL with query params:", url.toString());
+      console.log("===================================");
+
+      const response = await fetch(url.toString(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      console.log("Response Status:", response.status);
+      console.log("Response OK:", response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error Response Body:", errorText);
+        throw new Error(
+          `Weather forecast failed: ${response.status} - ${errorText}`
+        );
+      }
+
+      const result = await response.json();
+      console.log("API Response:", result);
+
+      // Return the weather data wrapped in the expected format
+      return {
+        success: true,
+        response: result,
+      };
+    } catch (error) {
+      console.error("Weather forecast error:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Unknown error occurred",
+      };
+    }
+  }
+
+  async getCropRecommendation(
+    request: CropRecommendationRequest
+  ): Promise<CropRecommendationResponse> {
+    try {
+      console.log("=== CROP RECOMMENDATION TOOL DEBUG ===");
+      console.log("Request Parameters:", request);
+
+      const url = new URL(`${this.baseUrl}/api/v1/crop-recommendation`);
+      url.searchParams.append("N", request.N.toString());
+      url.searchParams.append("P", request.P.toString());
+      url.searchParams.append("K", request.K.toString());
+      url.searchParams.append("temperature", request.temperature.toString());
+      url.searchParams.append("humidity", request.humidity.toString());
+      url.searchParams.append("ph", request.ph.toString());
+      url.searchParams.append("rainfall", request.rainfall.toString());
+      url.searchParams.append("model_type", request.model_type || "stacked");
+
+      console.log("API URL with query params:", url.toString());
+      console.log("======================================");
+
+      const response = await fetch(url.toString(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      console.log("Response Status:", response.status);
+      console.log("Response OK:", response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error Response Body:", errorText);
+        throw new Error(
+          `Crop recommendation failed: ${response.status} - ${errorText}`
+        );
+      }
+
+      const result = await response.json();
+      console.log("API Response:", result);
+      console.log("API Response Type:", typeof result);
+
+      // If the result is a string, try to parse it as JSON
+      if (typeof result === "string") {
+        console.log("Result is a string, attempting to parse JSON...");
+        try {
+          const parsedResult = JSON.parse(result);
+          console.log("Parsed result:", parsedResult);
+          return parsedResult;
+        } catch (parseError) {
+          console.error("Failed to parse JSON string:", parseError);
+          throw new Error("API returned invalid JSON string");
+        }
+      }
+
+      return result;
+    } catch (error) {
+      console.error("Crop recommendation error:", error);
+      throw new Error(
+        error instanceof Error
+          ? error.message
+          : "Failed to get crop recommendation"
+      );
+    }
+  }
+
+  async getFertilizerRecommendation(
+    request: FertilizerRecommendationRequest
+  ): Promise<FertilizerRecommendationResponse> {
+    try {
+      console.log("=== FERTILIZER RECOMMENDATION TOOL DEBUG ===");
+      console.log("Request Parameters:", request);
+
+      const url = new URL(`${this.baseUrl}/api/v1/fertilizer/recommendation`);
+      url.searchParams.append("temperature", request.temperature.toString());
+      url.searchParams.append("humidity", request.humidity.toString());
+      url.searchParams.append("moisture", request.moisture.toString());
+      url.searchParams.append("soil_type", request.soil_type);
+      url.searchParams.append("crop_type", request.crop_type);
+      url.searchParams.append("nitrogen", request.nitrogen.toString());
+      url.searchParams.append("potassium", request.potassium.toString());
+      url.searchParams.append("phosphorous", request.phosphorous.toString());
+
+      console.log("API URL with query params:", url.toString());
+      console.log("========================================");
+
+      const response = await fetch(url.toString(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      console.log("Response Status:", response.status);
+      console.log("Response OK:", response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error Response Body:", errorText);
+        throw new Error(
+          `Fertilizer recommendation failed: ${response.status} - ${errorText}`
+        );
+      }
+
+      const result = await response.json();
+      console.log("API Response:", result);
+      console.log("API Response Type:", typeof result);
+
+      // If the result is a string, try to parse it as JSON
+      if (typeof result === "string") {
+        console.log("Result is a string, attempting to parse JSON...");
+        try {
+          const parsedResult = JSON.parse(result);
+          console.log("Parsed result:", parsedResult);
+          return parsedResult;
+        } catch (parseError) {
+          console.error("Failed to parse JSON string:", parseError);
+          throw new Error("API returned invalid JSON string");
+        }
+      }
+
+      return result;
+    } catch (error) {
+      console.error("Fertilizer recommendation error:", error);
+      throw new Error(
+        error instanceof Error
+          ? error.message
+          : "Failed to get fertilizer recommendation"
+      );
     }
   }
 }

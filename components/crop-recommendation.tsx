@@ -1,7 +1,8 @@
+/* eslint-disable prettier/prettier */
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -13,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
+import { agriculturalAPI } from "@/lib/agricultural-api";
 import {
   Loader2,
   Sprout,
@@ -58,6 +60,8 @@ interface ApiResponse {
   metadata: {
     total_classes: number;
     prediction_timestamp: string;
+    function_version?: string;
+    available_models?: string[];
   };
 }
 
@@ -135,53 +139,76 @@ export function CropRecommendation() {
   });
 
   const [loading, setLoading] = useState(false);
-  const [recommendations, setRecommendations] = useState<ApiResponse | null>(
-    null,
-  );
+  const [error, setError] = useState<string | null>(null);
+  const [recommendations, setRecommendations] = useState<ApiResponse>();
+
+  // Debug effect to monitor recommendations state changes
+  useEffect(() => {
+    console.log("Recommendations state updated:", recommendations);
+    if (recommendations) {
+      console.log("Recommendations.predictions:", recommendations.predictions);
+      console.log("Predictions type:", typeof recommendations.predictions);
+    }
+  }, [recommendations]);
 
   const handleSliderChange = (field: keyof FormData, value: number[]) => {
     setFormData((prev) => ({ ...prev, [field]: value[0] }));
   };
 
-  const simulateApiCall = async (): Promise<ApiResponse> => {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+  const getCropRecommendation = async (): Promise<ApiResponse> => {
+    try {
+      const response = await agriculturalAPI.getCropRecommendation({
+        N: formData.nitrogen,
+        P: formData.phosphorus,
+        K: formData.potassium,
+        temperature: formData.temperature,
+        humidity: formData.humidity,
+        ph: formData.ph,
+        rainfall: formData.rainfall,
+        model_type: "stacked",
+      });
 
-    const mockCrops = [
-      "rice",
-      "maize",
-      "chickpea",
-      "kidneybeans",
-      "pigeonpeas",
-    ];
-    const mockProbs = [0.85, 0.72, 0.68, 0.54, 0.41];
+      console.log("getCropRecommendation - Raw API response:", response);
+      console.log("getCropRecommendation - Response type:", typeof response);
+      console.log(
+        "getCropRecommendation - Response.predictions:",
+        response.predictions
+      );
 
-    return {
-      status: "success",
-      model_used: "RandomForestClassifier",
-      input_parameters: formData,
-      predictions: {
-        recommended_crop: mockCrops[0],
-        top_5_recommendations: mockCrops.map((crop, index) => ({
-          crop,
-          confidence_score: mockProbs[index],
-          confidence_percentage: Math.round(mockProbs[index] * 100 * 100) / 100,
-        })),
-      },
-      metadata: {
-        total_classes: 22,
-        prediction_timestamp: new Date().toISOString(),
-      },
-    };
+      // If response is still a string, parse it
+      if (typeof response === "string") {
+        console.log("Response is still a string, parsing...");
+        const parsedResponse = JSON.parse(response);
+        console.log("Parsed response:", parsedResponse);
+        return parsedResponse;
+      }
+
+      return response;
+    } catch (error) {
+      console.error("Crop recommendation API error:", error);
+      throw error;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     try {
-      const response = await simulateApiCall();
+      const response = await getCropRecommendation();
+      console.log("API Response received:", response);
+      console.log("Response predictions:", response.predictions);
+      console.log("Response type:", typeof response);
+      console.log("Response keys:", Object.keys(response));
       setRecommendations(response);
+      // Note: React state updates are asynchronous, so recommendations won't be updated immediately
     } catch (error) {
       console.error("Error getting recommendations:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to get crop recommendations. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -201,7 +228,7 @@ export function CropRecommendation() {
   };
 
   const chartData =
-    recommendations?.predictions.top_5_recommendations.map((rec) => ({
+    recommendations?.predictions?.top_5_recommendations?.map((rec) => ({
       name: rec.crop.charAt(0).toUpperCase() + rec.crop.slice(1),
       confidence: rec.confidence_percentage,
       emoji: cropMetadata[rec.crop]?.emoji || "🌱",
@@ -357,10 +384,17 @@ export function CropRecommendation() {
                             </div>
                           </div>
                         );
-                      },
+                      }
                     )}
                   </div>
                 </div>
+
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                    <p className="text-sm font-medium">Error</p>
+                    <p className="text-xs mt-1">{error}</p>
+                  </div>
+                )}
 
                 <Button
                   type="submit"
@@ -388,22 +422,22 @@ export function CropRecommendation() {
               <Card className="shadow-xl border-0 bg-gradient-to-br from-green-500 to-emerald-600 text-white lg:col-span-2 lg:row-span-1">
                 <CardContent className="p-2 lg:p-4 text-center">
                   <div className="text-6xl lg:text-7xl mb-4">
-                    {cropMetadata[recommendations.predictions.recommended_crop]
-                      ?.emoji || "🌱"}
+                    {cropMetadata[
+                      recommendations.predictions?.recommended_crop || ""
+                    ]?.emoji || "🌱"}
                   </div>
                   <h2 className="text-2xl sm:text-3xl lg:text-3xl font-bold mb-2 capitalize">
-                    {recommendations.predictions.recommended_crop}
+                    {recommendations.predictions?.recommended_crop || "Unknown"}
                   </h2>
                   <Badge className="bg-white/20 text-white border-white/30 text-lg px-4 py-2 mb-4">
-                    {
-                      recommendations.predictions.top_5_recommendations[0]
-                        .confidence_percentage
-                    }
+                    {recommendations.predictions?.top_5_recommendations?.[0]
+                      ?.confidence_percentage || 0}
                     % Match
                   </Badge>
                   <p className="text-green-100 text-sm sm:text-base">
-                    {cropMetadata[recommendations.predictions.recommended_crop]
-                      ?.description ||
+                    {cropMetadata[
+                      recommendations.predictions?.recommended_crop || ""
+                    ]?.description ||
                       "Perfect crop choice for your current conditions!"}
                   </p>
                 </CardContent>
@@ -459,9 +493,9 @@ export function CropRecommendation() {
               </Card>
 
               <div className="lg:col-span-2 lg:row-span-1 space-y-3 lg:space-y-2">
-                {recommendations.predictions.top_5_recommendations
-                  .slice(0, 3)
-                  .map((rec, index) => (
+                {recommendations.predictions?.top_5_recommendations
+                  ?.slice(0, 3)
+                  ?.map((rec, index) => (
                     <Card
                       key={rec.crop}
                       className="shadow-lg border-0 bg-white/90 backdrop-blur-sm"
@@ -497,14 +531,14 @@ export function CropRecommendation() {
                     </Card>
                   ))}
 
-                {recommendations.predictions.top_5_recommendations.length >
-                  3 && (
+                {(recommendations.predictions?.top_5_recommendations?.length ||
+                  0) > 3 && (
                   <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm lg:block hidden">
                     <CardContent className="p-3">
                       <div className="space-y-2">
-                        {recommendations.predictions.top_5_recommendations
-                          .slice(3)
-                          .map((rec) => (
+                        {recommendations.predictions?.top_5_recommendations
+                          ?.slice(3)
+                          ?.map((rec) => (
                             <div
                               key={rec.crop}
                               className="flex items-center justify-between text-sm"
