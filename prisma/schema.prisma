@@ -11,9 +11,43 @@ datasource db {
 }
 
 model User {
-  id           Int    @id @default(autoincrement())
+  id           Int           @id @default(autoincrement())
   fullName     String
-  username     String @unique
-  aadharNumber String @unique
+  username     String        @unique
+  aadharNumber String        @unique
   password     String
+  chatSessions ChatSession[]
+}
+
+model ChatSession {
+  id        String        @id @default(cuid())
+  title     String
+  userId    Int
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agentId   String?
+  agentName String?
+  language  String        @default("en")
+  messages  ChatMessage[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model ChatMessage {
+  id             String      @id @default(cuid())
+  sessionId      String
+  session        ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role           String // "user" or "assistant"
+  content        String      @db.Text
+  language       String?
+  translations   Json?       // Store translations as JSON
+  metadata       Json?       // Store AI metadata (confidence, sources, etc.)
+  attachments    Json?       // Store file attachments as JSON
+  error          Boolean?    @default(false)
+  createdAt      DateTime    @default(now())
+
+  @@index([sessionId])
+  @@index([createdAt])
 }

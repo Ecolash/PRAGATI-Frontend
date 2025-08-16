@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { MessageTranslator } from "./message-translator";
 import { ChatMessage } from "@/types/agriculture";
 import { supportedLanguages } from "@/data/languages";
+import { formatTimestamp } from "@/lib/date-utils";
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -18,7 +19,7 @@ interface ChatMessagesProps {
   isLoading?: boolean;
   onTranslateActionMessageAction: (
     messageId: string,
-    targetLanguage: string,
+    targetLanguage: string
   ) => void;
 }
 
@@ -32,10 +33,6 @@ export function ChatMessages({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
 
   const handleSpeak = (text: string, languageCode: string) => {
     const language = supportedLanguages.find((l) => l.code === languageCode);
@@ -165,7 +162,7 @@ export function ChatMessages({
                         {Object.entries(message.translations).map(
                           ([langCode, translation]) => {
                             const language = supportedLanguages.find(
-                              (l) => l.code === langCode,
+                              (l) => l.code === langCode
                             );
                             if (!language) return null;
 
@@ -185,7 +182,7 @@ export function ChatMessages({
                                 <div className="pl-6">{translation}</div>
                               </div>
                             );
-                          },
+                          }
                         )}
                       </div>
                     )}
@@ -201,7 +198,7 @@ export function ChatMessages({
                       message.role === "user" ? "text-right" : "text-left"
                     }`}
                   >
-                    {formatTime(message.timestamp)}
+                    {formatTimestamp(message.timestamp)}
                   </div>
 
                   <MessageTranslator
