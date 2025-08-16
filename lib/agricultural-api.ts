@@ -22,6 +22,17 @@ export interface AgriculturalQueryResponse {
   agent_type?: string;
 }
 
+export interface CropDiseaseDetectionResponse {
+  success: boolean;
+  diseases?: string[];
+  disease_probabilities?: number[];
+  symptoms?: string[];
+  Treatments?: string[];
+  prevention_tips?: string[];
+  image_path?: string;
+  error?: string;
+}
+
 class AgriculturalAPIService {
   private baseUrl: string;
 
@@ -147,6 +158,51 @@ class AgriculturalAPIService {
     } catch (error) {
       console.error("Health check failed:", error);
       throw error;
+    }
+  }
+
+  async detectCropDisease(
+    imageFile: File
+  ): Promise<CropDiseaseDetectionResponse> {
+    try {
+      const formData = new FormData();
+      formData.append("image", imageFile);
+
+      console.log("=== CROP DISEASE DETECTION DEBUG ===");
+      console.log("Image file:", imageFile.name, imageFile.size);
+      console.log("API URL:", `${this.baseUrl}/api/v1/cropdisease/detect`);
+      console.log("====================================");
+
+      const response = await fetch(
+        `${this.baseUrl}/api/v1/cropdisease/detect`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      console.log("Response Status:", response.status);
+      console.log("Response OK:", response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error Response Body:", errorText);
+        throw new Error(
+          `Crop disease detection failed: ${response.status} - ${errorText}`
+        );
+      }
+
+      const result = await response.json();
+      console.log("API Response:", result);
+
+      return result;
+    } catch (error) {
+      console.error("Crop disease detection error:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Unknown error occurred",
+      };
     }
   }
 }
