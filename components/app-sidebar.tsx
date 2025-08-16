@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { agricultureAgents } from "@/data/agents";
 import { ChatSession } from "@/types/agriculture";
+import { formatDate } from "@/lib/date-utils";
 
 interface StreamlinedSidebarProps {
   chatSessions: ChatSession[];
@@ -83,7 +84,7 @@ export function AppSidebar({
               </SidebarMenuItem>
             </SidebarMenu>
 
-        {/* QR Scanner Button */}
+            {/* QR Scanner Button */}
             <SidebarMenu>
               <SidebarMenuItem>
                 <Button
@@ -273,7 +274,7 @@ export function AppSidebar({
                             {session.title}
                           </div>
                           <div className="text-xs text-gray-500">
-                            {session.createdAt.toLocaleDateString()}
+                            {formatDate(session.createdAt)}
                           </div>
                         </div>
                         {session.agent && (

@@ -40,7 +40,11 @@ class AgriculturalAPIService {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(request),
+          body: JSON.stringify({
+            query: request.query,
+            preferred_response_lang: request.language,
+            context: request.context,
+          }),
         }
       );
 
@@ -51,12 +55,85 @@ class AgriculturalAPIService {
       }
 
       const data = await response.json();
-      return data;
+
+      // Handle the response structure from your FastAPI backend
+      if (data.success && data.response) {
+        return {
+          response: data.response,
+          language: data.response_language || request.language || "en",
+          confidence: undefined, // Your backend doesn't seem to provide this
+          sources: undefined, // Your backend doesn't seem to provide this
+          agent_type: request.context?.agent_type,
+        };
+      } else {
+        throw new Error(data.error || "Failed to get response from AI");
+      }
     } catch (error) {
       console.error("Error calling agricultural API:", error);
       throw new Error(
         `Failed to get agricultural response: ${error instanceof Error ? error.message : "Unknown error"}`
       );
+    }
+  }
+
+  async translateText(
+    text: string,
+    targetLanguage: string
+  ): Promise<{ translated_text: string; source_language: string }> {
+    console.log("=== API TRANSLATION DEBUG ===");
+    console.log("Text to translate:", text.substring(0, 100) + "...");
+    console.log("Target Language:", targetLanguage);
+    console.log("API URL:", `${this.baseUrl}/api/v1/agriculture/translate`);
+    console.log("============================");
+
+    try {
+      const requestBody = {
+        text,
+        target_lang: targetLanguage,
+        source_lang: "auto",
+      };
+
+      console.log("Request Body:", requestBody);
+
+      const response = await fetch(
+        `${this.baseUrl}/api/v1/agriculture/translate`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        }
+      );
+
+      console.log("Response Status:", response.status);
+      console.log("Response OK:", response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error Response Body:", errorText);
+        throw new Error(
+          `Translation failed: ${response.status} - ${errorText}`
+        );
+      }
+
+      const result = await response.json();
+      console.log("API Response:", result);
+
+      // Handle the response structure from your FastAPI backend
+      if (result.success) {
+        console.log("Translation successful!");
+        return {
+          translated_text: result.translated_text,
+          source_language: result.source_language || "auto",
+        };
+      } else {
+        console.error("Translation failed - API returned success: false");
+        throw new Error(result.error || "Translation failed");
+      }
+    } catch (error) {
+      console.error("Translation error:", error);
+      throw error;
     }
   }
 

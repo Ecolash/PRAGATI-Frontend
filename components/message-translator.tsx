@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 "use client";
 
 import { useState } from "react";
@@ -25,12 +26,17 @@ export function MessageTranslator({
   onSpeakAction,
 }: MessageTranslatorProps) {
   const [copiedTranslation, setCopiedTranslation] = useState<string | null>(
-    null,
+    null
   );
   const [selectedLanguageForVoice, setSelectedLanguageForVoice] =
     useState<string>("en");
 
   const handleTranslate = (languageCode: string) => {
+    console.log("=== MESSAGE TRANSLATOR DEBUG ===");
+    console.log("Language selected:", languageCode);
+    console.log("Message ID:", message.id);
+    console.log("Calling onTranslateAction...");
+    console.log("================================");
     onTranslateAction(message.id, languageCode);
   };
 
@@ -107,7 +113,7 @@ export function MessageTranslator({
                 {Object.entries(message.translations).map(
                   ([langCode, translation]) => {
                     const language = supportedLanguages.find(
-                      (l) => l.code === langCode,
+                      (l) => l.code === langCode
                     );
                     if (!language) return null;
 
@@ -124,7 +130,7 @@ export function MessageTranslator({
                         <span className="text-sm">{language.nativeName}</span>
                       </DropdownMenuItem>
                     );
-                  },
+                  }
                 )}
               </>
             )}
@@ -160,7 +166,7 @@ export function MessageTranslator({
             {Object.entries(message.translations).map(
               ([langCode, translation]) => {
                 const language = supportedLanguages.find(
-                  (l) => l.code === langCode,
+                  (l) => l.code === langCode
                 );
                 if (!language) return null;
 
@@ -178,7 +184,7 @@ export function MessageTranslator({
                     <span className="text-sm">{language.nativeName}</span>
                   </DropdownMenuItem>
                 );
-              },
+              }
             )}
           </DropdownMenuContent>
         </DropdownMenu>
