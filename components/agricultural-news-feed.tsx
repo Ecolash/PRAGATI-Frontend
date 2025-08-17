@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 "use client";
 
 import type React from "react";
@@ -8,10 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Newspaper, Search, Loader2, AlertCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { agriculturalAPI } from "@/lib/agricultural-api";
 
 export function AgriculturalNewsFeed() {
   const [query, setQuery] = useState(
-    "latest loan and government schemes for farmers",
+    "latest loan and government schemes for farmers"
   );
   const [newsContent, setNewsContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -24,28 +26,28 @@ export function AgriculturalNewsFeed() {
     setError(null);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate loading time
+      console.log("Fetching agricultural news for query:", query);
 
-      const mockNewsContent = `Here's a summary of recent news articles about the latest loan and government schemes for farmers:
+      const response = await agriculturalAPI.getAgriculturalNews({
+        query: query.trim(),
+      });
 
-1.  **A Complete Guide to Agriculture Loan Options for Farmers:** This guide discusses various agricultural loan options, including NABARD schemes like STCRC, LTRCF, AMI sub-scheme, dairy lending, KCC refinance, and agro-infrastructure refinance.
-    *   [https://www.agriwise.com/a-complete-guide-to-agriculture-loan-options-for-farmers-in-2025/](https://www.agriwise.com/a-complete-guide-to-agriculture-loan-options-for-farmers-in-2025/)
+      console.log("News API response:", response);
 
-2.  **U.S. Department of Agriculture (USDA) | Grants.gov:** The USDA, through the Farm Service Agency (FSA), offers direct and guaranteed loans to family-size farmers and ranchers who cannot obtain commercial credit. These loans can be used for land, livestock, equipment, feed, seed, and supplies, as well as construction or farm improvements. The USDA also provides targeted loans to beginning farmers and ranchers.
-    *   [https://www.grants.gov/learn-grants/grant-making-agencies/u-s-department-of-agriculture-usda](https://www.grants.gov/learn-grants/grant-making-agencies/u-s-department-of-agriculture-usda)
-
-3.  **Grants and Loans | Home - USDA:** The Farm Service Agency (FSA) provides direct and guaranteed farm ownership and operating loans to family-size farmers and ranchers who cannot obtain commercial credit. These loans can be used to purchase land, livestock, equipment, feed, seed, and supplies.
-    *   [https://www.usda.gov/farming-and-ranching/financial-resources-farmers-and-ranchers/grants-and-loans](https://www.usda.gov/farming-and-ranching/financial-resources-farmers-and-ranchers/grants-and-loans)
-
-4.  **Agricultural Loan Programs: Best Agriculture Land Loans:** This article discusses sustainable agricultural loan programs and extension services, focusing on empowering farmers and boosting yields.
-    *   [https://farmonaut.com/africa/agricultural-loan-programs-best-agriculture-land-loans-2025](https://farmonaut.com/africa/agricultural-loan-programs-best-agriculture-land-loans-2025)
-
-5.  **Agricultural Subsidies:** This resource from the USDA's National Agricultural Library covers agricultural subsidies, including monetary payments and other support provided to farmers or agribusinesses. Subsidies support specific farming practices, research and development, conservation, disaster aid, marketing, nutrition assistance, and risk mitigation.
-    *   [https://www.nal.usda.gov/economics-business-and-trade/agricultural-subsidies](https://www.nal.usda.gov/economics-business-and-trade/agricultural-subsidies)`;
-
-      setNewsContent(mockNewsContent);
+      if (response.success && response.response) {
+        setNewsContent(response.response);
+      } else {
+        setError(response.error || "Failed to fetch agricultural news");
+        setNewsContent(null);
+      }
     } catch (err) {
-      setError("Failed to fetch agricultural news." + err);
+      console.error("News fetch error:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to fetch agricultural news. Please try again."
+      );
+      setNewsContent(null);
     } finally {
       setLoading(false);
     }

@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 "use client";
 
 import { useState } from "react";
@@ -18,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { agriculturalAPI } from "@/lib/agricultural-api";
 import {
   Loader2,
   TrendingUp,
@@ -35,8 +37,8 @@ import { Progress } from "@/components/ui/progress";
 
 interface CropYieldPrediction {
   status: string;
-  model_used: string;
-  input_parameters: {
+  model_used?: string;
+  input_parameters?: {
     state_name: string;
     district_name: string;
     crop_year: number;
@@ -47,7 +49,7 @@ interface CropYieldPrediction {
     soil_moisture: number;
     area_hectares: number;
   };
-  predictions: {
+  predictions?: {
     total_production: number;
     yield_per_hectare: number;
     production_unit: string;
@@ -57,7 +59,7 @@ interface CropYieldPrediction {
       confidence_level: string;
     };
   };
-  analysis: {
+  analysis?: {
     productivity_rating: string;
     seasonal_suitability: string;
     regional_context: string;
@@ -69,7 +71,7 @@ interface CropYieldPrediction {
     area: number;
     year: number;
   };
-  metadata: {
+  metadata?: {
     prediction_timestamp: string;
     model_version: string;
     data_source: string;
@@ -166,10 +168,12 @@ const districts = [
 
 export function CropYieldPredictor() {
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [prediction, setPrediction] = useState<CropYieldPrediction | null>(
-    null,
+    null
   );
   const [formData, setFormData] = useState({
+    state_name: "India",
     district_name: "",
     crop_year: new Date().getFullYear(),
     season: "",
@@ -186,68 +190,45 @@ export function CropYieldPredictor() {
 
   const handlePredict = async () => {
     setIsLoading(true);
+    setError(null);
 
-    // Simulate API call with mock data
-    setTimeout(() => {
-      const mockPrediction: CropYieldPrediction = {
-        status: "success",
-        model_used: "stacked_2",
-        input_parameters: {
-          state_name: "India",
-          district_name: formData.district_name,
-          crop_year: formData.crop_year,
-          season: formData.season,
-          crop: formData.crop,
-          temperature: Number(formData.temperature),
-          humidity: Number(formData.humidity),
-          soil_moisture: Number(formData.soil_moisture),
-          area_hectares: Number(formData.area),
-        },
-        predictions: {
-          total_production:
-            Math.round(Number(formData.area) * (2 + Math.random() * 6) * 100) /
-            100,
-          yield_per_hectare: Math.round((2 + Math.random() * 6) * 100) / 100,
-          production_unit: "tonnes",
-          confidence_interval: {
-            lower_bound:
-              Math.round(
-                Number(formData.area) * (1.5 + Math.random() * 3) * 100,
-              ) / 100,
-            upper_bound:
-              Math.round(
-                Number(formData.area) * (4 + Math.random() * 4) * 100,
-              ) / 100,
-            confidence_level: "80%",
-          },
-        },
-        analysis: {
-          productivity_rating:
-            Math.random() > 0.5
-              ? "High"
-              : Math.random() > 0.3
-                ? "Medium"
-                : "Low",
-          seasonal_suitability: formData.season,
-          regional_context: formData.district_name,
-        },
-        feature_importance: {
-          temperature: Math.random() * 0.3,
-          humidity: Math.random() * 0.25,
-          soil_moisture: Math.random() * 0.35,
-          area: Math.random() * 0.2,
-          year: Math.random() * 0.15,
-        },
-        metadata: {
-          prediction_timestamp: new Date().toISOString(),
-          model_version: "v1.0",
-          data_source: "Historical crop yield data",
-        },
-      };
+    try {
+      console.log("Making crop yield prediction API call...");
+      const response = await agriculturalAPI.getCropYieldPrediction({
+        state_name: formData.state_name,
+        district_name: formData.district_name,
+        crop_year: Number(formData.crop_year),
+        season: formData.season,
+        crop: formData.crop,
+        temperature: Number(formData.temperature),
+        humidity: Number(formData.humidity),
+        soil_moisture: Number(formData.soil_moisture),
+        area: Number(formData.area),
+        model_type: "stacked_2",
+      });
 
-      setPrediction(mockPrediction);
+      console.log("Crop yield prediction response:", response);
+
+      if (response.status === "success") {
+        setPrediction(response);
+      } else if (response.status === "error") {
+        setError(response.error_message || "Prediction failed");
+        setPrediction(null);
+      } else {
+        setError("Unexpected response format");
+        setPrediction(null);
+      }
+    } catch (error) {
+      console.error("Error getting crop yield prediction:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to get crop yield prediction. Please try again."
+      );
+      setPrediction(null);
+    } finally {
       setIsLoading(false);
-    }, 2000);
+    }
   };
 
   const getProductivityColor = (rating: string) => {
@@ -292,6 +273,21 @@ export function CropYieldPredictor() {
               on environmental conditions and agricultural parameters
             </p>
           </div>
+
+          {/* Error Display */}
+          {error && (
+            <Card className="mb-6 border-red-200 bg-red-50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="h-5 w-5 text-red-600" />
+                  <div>
+                    <p className="font-medium text-red-800">Prediction Error</p>
+                    <p className="text-red-600 text-sm">{error}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Form Section */}
@@ -353,7 +349,7 @@ export function CropYieldPredictor() {
                         onChange={(e) =>
                           handleInputChange(
                             "crop_year",
-                            Number.parseInt(e.target.value),
+                            Number.parseInt(e.target.value)
                           )
                         }
                         className="border-pink-200 focus:border-pink-400 w-full"
@@ -585,8 +581,8 @@ export function CropYieldPredictor() {
             Crop Yield Prediction Results
           </h1>
           <p className="text-lg text-gray-600">
-            AI-powered yield analysis for {prediction.input_parameters.crop} in{" "}
-            {prediction.input_parameters.district_name}
+            AI-powered yield analysis for {prediction.input_parameters?.crop} in{" "}
+            {prediction.input_parameters?.district_name}
           </p>
         </div>
 
@@ -600,21 +596,23 @@ export function CropYieldPredictor() {
             </CardHeader>
             <CardContent className="p-6">
               <div className="text-3xl font-bold text-pink-600 mb-2">
-                {prediction.predictions.total_production}{" "}
-                {prediction.predictions.production_unit}
+                {prediction.predictions?.total_production}{" "}
+                {prediction.predictions?.production_unit}
               </div>
               <div className="text-sm text-gray-600 mb-4">
                 Confidence:{" "}
-                {prediction.predictions.confidence_interval.lower_bound} -{" "}
-                {prediction.predictions.confidence_interval.upper_bound} tonnes
-                ({prediction.predictions.confidence_interval.confidence_level})
+                {prediction.predictions?.confidence_interval?.lower_bound} -{" "}
+                {prediction.predictions?.confidence_interval?.upper_bound}{" "}
+                tonnes (
+                {prediction.predictions?.confidence_interval?.confidence_level})
               </div>
               <Progress
                 value={Math.min(
-                  (prediction.predictions.total_production /
-                    prediction.predictions.confidence_interval.upper_bound) *
+                  ((prediction.predictions?.total_production || 0) /
+                    (prediction.predictions?.confidence_interval?.upper_bound ||
+                      1)) *
                     100,
-                  100,
+                  100
                 )}
                 className="h-2"
               />
@@ -630,21 +628,23 @@ export function CropYieldPredictor() {
             </CardHeader>
             <CardContent className="p-6">
               <div className="text-3xl font-bold text-pink-600 mb-2">
-                {prediction.predictions.yield_per_hectare}{" "}
-                {prediction.predictions.production_unit}/ha
+                {prediction.predictions?.yield_per_hectare}{" "}
+                {prediction.predictions?.production_unit}/ha
               </div>
               <div className="flex items-center gap-2 mb-4">
-                {getProductivityIcon(prediction.analysis.productivity_rating)}
+                {getProductivityIcon(
+                  prediction.analysis?.productivity_rating || "Medium"
+                )}
                 <span
-                  className={`font-semibold ${getProductivityColor(prediction.analysis.productivity_rating)}`}
+                  className={`font-semibold ${getProductivityColor(prediction.analysis?.productivity_rating || "Medium")}`}
                 >
-                  {prediction.analysis.productivity_rating} Productivity
+                  {prediction.analysis?.productivity_rating} Productivity
                 </span>
               </div>
               <Progress
                 value={Math.min(
-                  (prediction.predictions.yield_per_hectare / 10) * 100,
-                  100,
+                  ((prediction.predictions?.yield_per_hectare || 0) / 10) * 100,
+                  100
                 )}
                 className="h-2"
               />
@@ -663,19 +663,19 @@ export function CropYieldPredictor() {
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="h-4 w-4 text-pink-500" />
                   <span className="font-medium">
-                    {prediction.input_parameters.season}{" "}
-                    {prediction.input_parameters.crop_year}
+                    {prediction.input_parameters?.season}{" "}
+                    {prediction.input_parameters?.crop_year}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <MapPin className="h-4 w-4 text-pink-500" />
-                  <span>{prediction.analysis.regional_context}</span>
+                  <span>{prediction.analysis?.regional_context}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Sprout className="h-4 w-4 text-pink-500" />
                   <span>
-                    {prediction.input_parameters.crop} (
-                    {prediction.input_parameters.area_hectares} ha)
+                    {prediction.input_parameters?.crop} (
+                    {prediction.input_parameters?.area_hectares} ha)
                   </span>
                 </div>
               </div>
@@ -709,7 +709,7 @@ export function CropYieldPredictor() {
                       </div>
                       <Progress value={importance * 100} className="h-2" />
                     </div>
-                  ),
+                  )
                 )}
               </div>
             </CardContent>
@@ -728,13 +728,13 @@ export function CropYieldPredictor() {
                     Temperature:
                   </span>
                   <span className="ml-2">
-                    {prediction.input_parameters.temperature}°C
+                    {prediction.input_parameters?.temperature}°C
                   </span>
                 </div>
                 <div>
                   <span className="font-medium text-gray-700">Humidity:</span>
                   <span className="ml-2">
-                    {prediction.input_parameters.humidity}%
+                    {prediction.input_parameters?.humidity}%
                   </span>
                 </div>
                 <div>
@@ -742,13 +742,13 @@ export function CropYieldPredictor() {
                     Soil Moisture:
                   </span>
                   <span className="ml-2">
-                    {prediction.input_parameters.soil_moisture}%
+                    {prediction.input_parameters?.soil_moisture}%
                   </span>
                 </div>
                 <div>
                   <span className="font-medium text-gray-700">Area:</span>
                   <span className="ml-2">
-                    {prediction.input_parameters.area_hectares} ha
+                    {prediction.input_parameters?.area_hectares} ha
                   </span>
                 </div>
               </div>
@@ -764,13 +764,13 @@ export function CropYieldPredictor() {
                 <div>
                   <span className="font-medium text-gray-700">Model Used:</span>
                   <span className="ml-2 capitalize">
-                    {prediction.model_used.replace("_", " ")}
+                    {prediction.model_used?.replace("_", " ") || "Unknown"}
                   </span>
                 </div>
                 <div>
                   <span className="font-medium text-gray-700">Version:</span>
                   <span className="ml-2">
-                    {prediction.metadata.model_version}
+                    {prediction.metadata?.model_version || "N/A"}
                   </span>
                 </div>
                 <div>
@@ -778,7 +778,7 @@ export function CropYieldPredictor() {
                     Data Source:
                   </span>
                   <span className="ml-2">
-                    {prediction.metadata.data_source}
+                    {prediction.metadata?.data_source || "N/A"}
                   </span>
                 </div>
                 <div>
@@ -786,9 +786,11 @@ export function CropYieldPredictor() {
                     Prediction Time:
                   </span>
                   <span className="ml-2">
-                    {new Date(
-                      prediction.metadata.prediction_timestamp,
-                    ).toLocaleString()}
+                    {prediction.metadata?.prediction_timestamp
+                      ? new Date(
+                          prediction.metadata.prediction_timestamp
+                        ).toLocaleString()
+                      : "N/A"}
                   </span>
                 </div>
               </div>
