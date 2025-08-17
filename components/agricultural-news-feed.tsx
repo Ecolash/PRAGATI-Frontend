@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 "use client";
 
 import type React from "react";
@@ -13,7 +12,7 @@ import { agriculturalAPI } from "@/lib/agricultural-api";
 
 export function AgriculturalNewsFeed() {
   const [query, setQuery] = useState(
-    "latest loan and government schemes for farmers"
+    "latest loan and government schemes for farmers",
   );
   const [newsContent, setNewsContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -45,7 +44,7 @@ export function AgriculturalNewsFeed() {
       setError(
         err instanceof Error
           ? err.message
-          : "Failed to fetch agricultural news. Please try again."
+          : "Failed to fetch agricultural news. Please try again.",
       );
       setNewsContent(null);
     } finally {

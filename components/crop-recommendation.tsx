@@ -1,8 +1,7 @@
-/* eslint-disable prettier/prettier */
 "use client";
 
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -14,17 +13,25 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
-import { agriculturalAPI } from "@/lib/agricultural-api";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Loader2,
-  Sprout,
-  Thermometer,
   FlaskConical,
-  Gauge,
   BarChart3,
   TrendingUp,
+  Sprout,
+  CheckCircle2,
+  Target,
+  Thermometer,
 } from "lucide-react";
 import { cropMetadata } from "@/components/lib/crop-metadata";
+import { agriculturalAPI } from "@/lib/agricultural-api";
 import {
   Bar,
   BarChart,
@@ -73,59 +80,71 @@ interface FormData {
   humidity: number;
   ph: number;
   rainfall: number;
+  soil_type: string;
+  season: string;
 }
 
 const parameterConfig = {
-  nitrogen: {
-    min: 0,
-    max: 140,
-    step: 1,
-    unit: "mg/kg",
-    symbol: "N",
-    color: "#3b82f6",
-  }, // Blue
-  phosphorus: {
-    min: 0,
-    max: 145,
-    step: 1,
-    unit: "mg/kg",
-    symbol: "P",
-    color: "#8b5cf6",
-  }, // Purple
-  potassium: {
-    min: 0,
-    max: 205,
-    step: 1,
-    unit: "mg/kg",
-    symbol: "K",
-    color: "#f59e0b",
-  }, // Amber
   temperature: {
     min: 0,
     max: 45,
     step: 0.5,
     unit: "°C",
     symbol: "T",
-    color: "#ef4444",
-  }, // Red
+    color: "#059669",
+  },
   humidity: {
     min: 0,
     max: 100,
     step: 1,
     unit: "%",
     symbol: "H",
-    color: "#06b6d4",
-  }, // Cyan
-  ph: { min: 0, max: 14, step: 0.1, unit: "", symbol: "pH", color: "#84cc16" }, // Lime
+    color: "#0d9488",
+  },
   rainfall: {
     min: 0,
     max: 300,
     step: 1,
     unit: "mm",
     symbol: "R",
-    color: "#10b981",
-  }, // Emerald
+    color: "#0891b2",
+  },
+  nitrogen: {
+    min: 0,
+    max: 140,
+    step: 1,
+    unit: "mg/kg",
+    symbol: "N",
+    color: "#16a34a",
+  },
+  potassium: {
+    min: 0,
+    max: 205,
+    step: 1,
+    unit: "mg/kg",
+    symbol: "K",
+    color: "#15803d",
+  },
+  phosphorus: {
+    min: 0,
+    max: 145,
+    step: 1,
+    unit: "mg/kg",
+    symbol: "P",
+    color: "#166534",
+  },
+  ph: {
+    min: 0,
+    max: 14,
+    step: 0.1,
+    unit: "",
+    symbol: "pH",
+    color: "#84cc16",
+  },
 };
+
+const soilTypes = ["Sandy", "Loamy", "Black", "Red", "Clayey"];
+const seasons = ["Kharif", "Rabi", "Zaid", "Summer", "Winter"];
 
 export function CropRecommendation() {
   const [formData, setFormData] = useState<FormData>({
@@ -136,23 +155,22 @@ export function CropRecommendation() {
     humidity: 60,
     ph: 7,
     rainfall: 100,
+    soil_type: "Loamy",
+    season: "Kharif",
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [recommendations, setRecommendations] = useState<ApiResponse>();
-
-  // Debug effect to monitor recommendations state changes
-  useEffect(() => {
-    console.log("Recommendations state updated:", recommendations);
-    if (recommendations) {
-      console.log("Recommendations.predictions:", recommendations.predictions);
-      console.log("Predictions type:", typeof recommendations.predictions);
-    }
-  }, [recommendations]);
+  const [recommendations, setRecommendations] = useState<ApiResponse | null>(
+    null,
+  );
 
   const handleSliderChange = (field: keyof FormData, value: number[]) => {
     setFormData((prev) => ({ ...prev, [field]: value[0] }));
+  };
+
+  const handleDropdownChange = (field: keyof FormData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const getCropRecommendation = async (): Promise<ApiResponse> => {
@@ -170,12 +188,7 @@ export function CropRecommendation() {
 
       console.log("getCropRecommendation - Raw API response:", response);
       console.log("getCropRecommendation - Response type:", typeof response);
-      console.log(
-        "getCropRecommendation - Response.predictions:",
-        response.predictions
-      );
 
-      // If response is still a string, parse it
       if (typeof response === "string") {
         console.log("Response is still a string, parsing...");
         const parsedResponse = JSON.parse(response);
@@ -196,35 +209,29 @@ export function CropRecommendation() {
     setError(null);
     try {
       const response = await getCropRecommendation();
-      console.log("API Response received:", response);
-      console.log("Response predictions:", response.predictions);
-      console.log("Response type:", typeof response);
-      console.log("Response keys:", Object.keys(response));
-      setRecommendations(response);
-      // Note: React state updates are asynchronous, so recommendations won't be updated immediately
+
+      if (response.status !== "success") {
+        setError("Failed to get crop recommendations");
+        setRecommendations(null);
+      } else {
+        setRecommendations(response);
+      }
     } catch (error) {
       console.error("Error getting recommendations:", error);
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to get crop recommendations. Please try again."
+          : "Failed to get crop recommendations. Please try again.",
       );
     } finally {
       setLoading(false);
     }
   };
 
-  const getConfidenceColor = (percentage: number) => {
-    if (percentage >= 80) return "bg-green-100 text-green-800 border-green-200";
-    if (percentage >= 60)
-      return "bg-yellow-100 text-yellow-800 border-yellow-200";
-    return "bg-red-100 text-red-800 border-red-200";
-  };
-
   const getBarColor = (percentage: number) => {
-    if (percentage >= 80) return "#10b981";
-    if (percentage >= 60) return "#f59e0b";
-    return "#ef4444";
+    if (percentage >= 80) return "#16a34a";
+    if (percentage >= 60) return "#059669";
+    return "#0d9488";
   };
 
   const chartData =
@@ -235,240 +242,452 @@ export function CropRecommendation() {
     })) || [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
-      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-green-200 px-4 py-2">
+    <div className="min-h-screen">
+      <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md border-b border-green-200 px-4 py-3">
         <div className="flex items-center justify-center">
           <div className="text-center">
-            <h1 className="text-lg sm:text-xl font-bold text-green-800 flex items-center gap-1 justify-center">
-              <Sprout className="h-5 w-5" />
+            <h1 className="text-xl sm:text-2xl font-bold  flex items-center gap-2 justify-center">
+              <Sprout className="h-6 w-6 text-gray-600" />
               AI Crop Advisor
             </h1>
+            <p className="text-sm text-gray-600 mt-1">
+              Smart recommendations for optimal crop selection
+            </p>
           </div>
         </div>
       </div>
 
-      <div className="px-4 py-4 max-w-7xl mx-auto">
-        <div className="lg:grid lg:grid-cols-5 lg:gap-6 lg:grid-rows-[auto_auto_auto] space-y-4 lg:space-y-0">
-          <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm lg:col-span-3 lg:row-span-3 pt-0">
-            <CardHeader className="bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-lg py-2">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <FlaskConical className="h-4 w-4" />
-                Parameters
+      <div className="px-4 py-6 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4 auto-rows-min">
+          <Card className="md:col-span-3 bg-white/90 backdrop-blur-sm border border-green-200 shadow-lg">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2  text-lg">
+                <Thermometer className="h-5 w-5 text-gray-600" />
+                Environmental
               </CardTitle>
-              <CardDescription className="text-green-100 text-xs">
-                Adjust to match your conditions
+              <CardDescription className="text-gray-600">
+                Climate conditions for optimal growth
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-3 sm:p-4">
-              <form onSubmit={handleSubmit} className="space-y-3">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 pb-1 border-b border-green-100">
-                    <Gauge className="h-3 w-3 text-green-600" />
-                    <h3 className="font-semibold text-green-800 text-xs">
-                      Soil Nutrients
-                    </h3>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {(
-                      ["nitrogen", "phosphorus", "potassium", "ph"] as const
-                    ).map((param) => {
-                      const config = parameterConfig[param];
-                      return (
-                        <div key={param} className="space-y-1">
-                          <div className="flex items-center justify-between">
-                            <Label className="text-xs font-medium flex items-center gap-1">
-                              <div
-                                className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                                style={{ backgroundColor: config.color }}
-                              >
-                                {config.symbol}
-                              </div>
-                              <span className="capitalize">{param}</span>
-                            </Label>
-                            <Badge
-                              variant="outline"
-                              className="text-xs px-1 py-0"
-                            >
-                              {formData[param]}
-                              {config.unit}
-                            </Badge>
+            <CardContent className="space-y-4">
+              {(["temperature", "humidity", "rainfall"] as const).map(
+                (param) => {
+                  const config = parameterConfig[param];
+                  return (
+                    <div key={param} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium flex items-center gap-2">
+                          <div
+                            className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm"
+                            style={{ backgroundColor: config.color }}
+                          >
+                            {config.symbol}
                           </div>
-                          <div className="px-1">
-                            <Slider
-                              value={[formData[param]]}
-                              onValueChange={(value) =>
-                                handleSliderChange(param, value)
-                              }
-                              max={config.max}
-                              min={config.min}
-                              step={config.step}
-                              className="w-full [&_.slider-thumb]:hidden [&_[role=slider]]:hidden"
-                              style={
-                                {
-                                  "--slider-track": "#e2e8f0",
-                                  "--slider-range": config.color,
-                                } as React.CSSProperties
-                              }
-                            />
-                            <div className="flex justify-between text-xs text-gray-400 mt-0.5">
-                              <span>{config.min}</span>
-                              <span>
-                                {config.max}
-                                {config.unit}
-                              </span>
-                            </div>
-                          </div>
+                          <span className="capitalize text-gray-700">
+                            {param}
+                          </span>
+                        </Label>
+                        <Badge
+                          variant="secondary"
+                          className="bg-green-100  border-green-200"
+                        >
+                          {formData[param]}
+                          {config.unit}
+                        </Badge>
+                      </div>
+                      <div className="px-2">
+                        <Slider
+                          value={[formData[param]]}
+                          onValueChange={(value) =>
+                            handleSliderChange(param, value)
+                          }
+                          max={config.max}
+                          min={config.min}
+                          step={config.step}
+                          className="[&_[role=slider]]:bg-white [&_[role=slider]]:border-2 [&_[role=slider]]:shadow-md [&_.bg-primary]:bg-gradient-to-r [&_.bg-primary]:from-green-300 [&_.bg-primary]:to-green-400"
+                        />
+                        <div className="flex justify-between text-xs text-gray-400 mt-1">
+                          <span>{config.min}</span>
+                          <span>
+                            {config.max}
+                            {config.unit}
+                          </span>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 pb-1 border-b border-green-100">
-                    <Thermometer className="h-3 w-3 text-green-600" />
-                    <h3 className="font-semibold text-green-800 text-xs">
-                      Climate
-                    </h3>
-                  </div>
-
-                  <div className="space-y-3">
-                    {(["temperature", "humidity", "rainfall"] as const).map(
-                      (param) => {
-                        const config = parameterConfig[param];
-                        return (
-                          <div key={param} className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <Label className="text-xs font-medium flex items-center gap-1">
-                                <div
-                                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                                  style={{ backgroundColor: config.color }}
-                                >
-                                  {config.symbol}
-                                </div>
-                                <span className="capitalize">{param}</span>
-                              </Label>
-                              <Badge
-                                variant="outline"
-                                className="text-xs px-1 py-0"
-                              >
-                                {formData[param]}
-                                {config.unit}
-                              </Badge>
-                            </div>
-                            <div className="px-1">
-                              <Slider
-                                value={[formData[param]]}
-                                onValueChange={(value) =>
-                                  handleSliderChange(param, value)
-                                }
-                                max={config.max}
-                                min={config.min}
-                                step={config.step}
-                                className="w-full [&_.slider-thumb]:hidden [&_[role=slider]]:hidden"
-                                style={
-                                  {
-                                    "--slider-track": "#e2e8f0",
-                                    "--slider-range": config.color,
-                                  } as React.CSSProperties
-                                }
-                              />
-                              <div className="flex justify-between text-xs text-gray-400 mt-0.5">
-                                <span>{config.min}</span>
-                                <span>
-                                  {config.max}
-                                  {config.unit}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      }
-                    )}
-                  </div>
-                </div>
-
-                {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-                    <p className="text-sm font-medium">Error</p>
-                    <p className="text-xs mt-1">{error}</p>
-                  </div>
-                )}
-
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-3 text-sm font-semibold rounded-xl shadow-lg"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Analyzing...
-                    </>
-                  ) : (
-                    <>
-                      <TrendingUp className="mr-2 h-4 w-4" />
-                      Get Recommendations
-                    </>
-                  )}
-                </Button>
-              </form>
+                      </div>
+                    </div>
+                  );
+                },
+              )}
+              <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                <h4 className="text-sm font-medium  mb-2">🌤️ Climate Tips</h4>
+                <ul className="text-xs text-gray-600 space-y-1">
+                  <li>• Temperature affects crop growth rate and yield</li>
+                  <li>• Humidity influences disease susceptibility</li>
+                  <li>• Rainfall determines irrigation requirements</li>
+                </ul>
+              </div>
             </CardContent>
           </Card>
 
-          {recommendations && (
+          <Card className="md:col-span-3 bg-white/90 backdrop-blur-sm border border-green-200 shadow-lg">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2  text-lg">
+                <FlaskConical className="h-5 w-5 text-gray-600" />
+                Soil Nutrients
+              </CardTitle>
+              <CardDescription className="text-gray-600">
+                NPK levels and pH for soil analysis
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {(["nitrogen", "phosphorus", "potassium", "ph"] as const).map(
+                (param) => {
+                  const config = parameterConfig[param];
+                  return (
+                    <div key={param} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium flex items-center gap-2">
+                          <div
+                            className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm"
+                            style={{ backgroundColor: config.color }}
+                          >
+                            {config.symbol}
+                          </div>
+                          <span className="capitalize text-gray-700">
+                            {param}
+                          </span>
+                        </Label>
+                        <Badge
+                          variant="secondary"
+                          className="bg-green-100  border-green-200"
+                        >
+                          {formData[param]}
+                          {config.unit}
+                        </Badge>
+                      </div>
+                      <div className="px-2">
+                        <Slider
+                          value={[formData[param]]}
+                          onValueChange={(value) =>
+                            handleSliderChange(param, value)
+                          }
+                          max={config.max}
+                          min={config.min}
+                          step={config.step}
+                          className="[&_[role=slider]]:bg-white [&_[role=slider]]:border-2 [&_[role=slider]]:shadow-md [&_.bg-primary]:bg-gradient-to-r [&_.bg-primary]:from-green-300 [&_.bg-primary]:to-green-400"
+                        />
+                        <div className="flex justify-between text-xs text-gray-400 mt-1">
+                          <span>{config.min}</span>
+                          <span>
+                            {config.max}
+                            {config.unit}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                },
+              )}
+              <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                <h4 className="text-sm font-medium  mb-2">🧪 Soil Guide</h4>
+                <div className="text-xs text-gray-600 space-y-1">
+                  <div className="flex justify-between">
+                    <span>Nitrogen (N):</span>
+                    <span>Leaf growth</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Phosphorus (P):</span>
+                    <span>Root development</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Potassium (K):</span>
+                    <span>Disease resistance</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>pH Level:</span>
+                    <span>Nutrient availability</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="md:col-span-2 lg:col-span-2 xl:col-span-3 bg-white/90 backdrop-blur-sm border border-green-200 shadow-lg">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2  text-lg">
+                <Sprout className="h-5 w-5 text-gray-600" />
+                Soil & Season Selection
+              </CardTitle>
+              <CardDescription className="text-gray-600">
+                Choose your farming context and conditions
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-700">
+                    Soil Type
+                  </Label>
+                  <Select
+                    value={formData.soil_type}
+                    onValueChange={(value) =>
+                      handleDropdownChange("soil_type", value)
+                    }
+                  >
+                    <SelectTrigger className="bg-white border-green-200 focus:border-green-400 focus:ring-green-400">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {soilTypes.map((soil) => (
+                        <SelectItem key={soil} value={soil}>
+                          {soil}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-700">
+                    Season
+                  </Label>
+                  <Select
+                    value={formData.season}
+                    onValueChange={(value) =>
+                      handleDropdownChange("season", value)
+                    }
+                  >
+                    <SelectTrigger className="bg-white border-green-200 focus:border-green-400 focus:ring-green-400">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {seasons.map((season) => (
+                        <SelectItem key={season} value={season}>
+                          {season}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                  <h4 className="text-sm font-medium  mb-2 flex items-center gap-1">
+                    🌱 Soil Properties
+                  </h4>
+                  <div className="text-xs text-gray-600 space-y-1">
+                    <div>
+                      <strong>Current:</strong> {formData.soil_type}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {formData.soil_type === "Sandy" &&
+                        "Good drainage, low nutrients"}
+                      {formData.soil_type === "Loamy" &&
+                        "Balanced, ideal for most crops"}
+                      {formData.soil_type === "Black" &&
+                        "Rich in nutrients, cotton-friendly"}
+                      {formData.soil_type === "Red" &&
+                        "Iron-rich, good for cereals"}
+                      {formData.soil_type === "Clayey" &&
+                        "High water retention, dense"}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                  <h4 className="text-sm font-medium  mb-2 flex items-center gap-1">
+                    🌾 Season Info
+                  </h4>
+                  <div className="text-xs text-gray-600 space-y-1">
+                    <div>
+                      <strong>Selected:</strong> {formData.season}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {formData.season === "Kharif" &&
+                        "Monsoon season, June-October"}
+                      {formData.season === "Rabi" &&
+                        "Winter season, November-April"}
+                      {formData.season === "Zaid" &&
+                        "Summer season, April-June"}
+                      {formData.season === "Summer" && "Hot season crops"}
+                      {formData.season === "Winter" && "Cool season crops"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                <h4 className="text-sm font-medium  mb-2">
+                  📊 Current Configuration
+                </h4>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="text-gray-600">
+                    Temperature:{" "}
+                    <span className="font-medium">
+                      {formData.temperature}°C
+                    </span>
+                  </div>
+                  <div className="text-gray-600">
+                    Humidity:{" "}
+                    <span className="font-medium">{formData.humidity}%</span>
+                  </div>
+                  <div className="text-gray-600">
+                    N:{" "}
+                    <span className="font-medium">
+                      {formData.nitrogen} mg/kg
+                    </span>
+                  </div>
+                  <div className="text-gray-600">
+                    P:{" "}
+                    <span className="font-medium">
+                      {formData.phosphorus} mg/kg
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                  <p className="text-sm font-medium">Error</p>
+                  <p className="text-xs mt-1">{error}</p>
+                </div>
+              )}
+
+              <Button
+                onClick={handleSubmit}
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-green-400 to-emerald-400 hover:from-green-500 hover:to-emerald-500 text-green-900 py-3 text-sm font-semibold rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <TrendingUp className="mr-2 h-4 w-4" />
+                    Get Recommendations
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="md:col-span-2 lg:col-span-2 xl:col-span-3 bg-gradient-to-br from-green-100 via-green-200 to-emerald-200 border-0 shadow-lg">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 bg-white/30 rounded-xl">
+                  <Target className="h-8 w-8" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-xl">Ready to Analyse</h3>
+                  <p className="text-green-800 text-sm">
+                    All parameters configured and validated
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-2 bg-white/20 rounded-lg">
+                  <span className="text-sm font-medium">Parameters Set</span>
+                  <Badge className="bg-white/30 text-green-900 border-white/40">
+                    {Object.keys(formData).length}/9
+                  </Badge>
+                </div>
+
+                <div className="flex items-center justify-between p-2 bg-white/20 rounded-lg">
+                  <span className="text-sm font-medium">Soil & Season</span>
+                  <CheckCircle2 className="h-4 w-4 text-green-800" />
+                </div>
+
+                <div className="flex items-center justify-between p-2 bg-white/20 rounded-lg">
+                  <span className="text-sm font-medium">Environmental</span>
+                  <CheckCircle2 className="h-4 w-4 text-green-800" />
+                </div>
+
+                <div className="flex items-center justify-between p-2 bg-white/20 rounded-lg">
+                  <span className="text-sm font-medium">NPK & pH Levels</span>
+                  <CheckCircle2 className="h-4 w-4 text-green-800" />
+                </div>
+              </div>
+
+              <div className="mt-4 p-3 bg-white/20 rounded-lg">
+                <h4 className="text-sm font-medium mb-2">🎯 Analysis Ready</h4>
+                <p className="text-xs text-green-800 leading-relaxed">
+                  Your configuration is complete! Our AI will analyze optimal
+                  crop selection for {formData.soil_type.toLowerCase()} soil
+                  during {formData.season.toLowerCase()} season and recommend
+                  the best crops for your conditions.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {recommendations && recommendations.predictions && (
             <>
-              <Card className="shadow-xl border-0 bg-gradient-to-br from-green-500 to-emerald-600 text-white lg:col-span-2 lg:row-span-1">
-                <CardContent className="p-2 lg:p-4 text-center">
-                  <div className="text-6xl lg:text-7xl mb-4">
+              <Card className="md:col-span-2 lg:col-span-2 xl:col-span-3 bg-gradient-to-br from-green-400 via-emerald-300 to-green-500 text-green-900 border-0 shadow-xl">
+                <CardContent className="p-6 text-center">
+                  <div className="text-7xl mb-4">
                     {cropMetadata[
-                      recommendations.predictions?.recommended_crop || ""
+                      recommendations.predictions.recommended_crop || ""
                     ]?.emoji || "🌱"}
                   </div>
-                  <h2 className="text-2xl sm:text-3xl lg:text-3xl font-bold mb-2 capitalize">
-                    {recommendations.predictions?.recommended_crop || "Unknown"}
+                  <h2 className="text-2xl font-bold mb-3 capitalize">
+                    {recommendations.predictions.recommended_crop || "Unknown"}
                   </h2>
-                  <Badge className="bg-white/20 text-white border-white/30 text-lg px-4 py-2 mb-4">
-                    {recommendations.predictions?.top_5_recommendations?.[0]
+                  <Badge className="bg-white/30 text-green-900 border-white/40 text-lg px-6 py-2 mb-4 shadow-lg">
+                    {recommendations.predictions.top_5_recommendations?.[0]
                       ?.confidence_percentage || 0}
                     % Match
                   </Badge>
-                  <p className="text-green-100 text-sm sm:text-base">
+                  <p className="text-sm mb-3 text-green-800 leading-relaxed">
                     {cropMetadata[
-                      recommendations.predictions?.recommended_crop || ""
+                      recommendations.predictions.recommended_crop || ""
                     ]?.description ||
                       "Perfect crop choice for your current conditions!"}
+                  </p>
+                  <p className=" text-xs italic">
+                    {cropMetadata[
+                      recommendations.predictions.recommended_crop || ""
+                    ]?.category || "Optimal for your soil and climate"}
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm lg:col-span-2 lg:row-span-1">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-green-800 text-lg">
-                    <BarChart3 className="h-5 w-5" />
+              <Card className="md:col-span-2 lg:col-span-4 xl:col-span-6 bg-white/90 backdrop-blur-sm border border-green-200 shadow-lg">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2  text-xl">
+                    <BarChart3 className="h-6 w-6 text-gray-600" />
                     Confidence Analysis
                   </CardTitle>
-                  <CardDescription className="text-sm">
-                    Top crop suitability scores
+                  <CardDescription className="text-gray-600">
+                    Top crop suitability scores for your specific conditions
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <div className="h-48 lg:h-56 w-full">
+                <CardContent className="p-6 pt-0">
+                  <div className="h-64 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={chartData}
-                        margin={{ top: 10, right: 10, left: 10, bottom: 40 }}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
                       >
                         <XAxis
                           dataKey="name"
-                          tick={{ fontSize: 10 }}
-                          interval={0}
+                          tick={{ fontSize: 12, fill: "#166534" }}
                           angle={-45}
                           textAnchor="end"
-                          height={50}
+                          height={80}
                         />
-                        <YAxis tick={{ fontSize: 10 }} />
+                        <YAxis
+                          tick={{ fontSize: 12, fill: "#166534" }}
+                          label={{
+                            value: "Confidence %",
+                            angle: -90,
+                            position: "insideLeft",
+                            style: { textAnchor: "middle", fill: "#166534" },
+                          }}
+                        />
                         <Tooltip
                           formatter={(value: any) => [
                             `${value}%`,
@@ -477,8 +696,14 @@ export function CropRecommendation() {
                           labelFormatter={(label: string) =>
                             `${chartData.find((d) => d.name === label)?.emoji} ${label}`
                           }
+                          contentStyle={{
+                            backgroundColor: "#f0fdf4",
+                            border: "1px solid #16a34a",
+                            borderRadius: "8px",
+                            color: "#166534",
+                          }}
                         />
-                        <Bar dataKey="confidence" radius={[4, 4, 0, 0]}>
+                        <Bar dataKey="confidence" radius={[6, 6, 0, 0]}>
                           {chartData.map((entry, index) => (
                             <Cell
                               key={`cell-${index}`}
@@ -491,93 +716,7 @@ export function CropRecommendation() {
                   </div>
                 </CardContent>
               </Card>
-
-              <div className="lg:col-span-2 lg:row-span-1 space-y-3 lg:space-y-2">
-                {recommendations.predictions?.top_5_recommendations
-                  ?.slice(0, 3)
-                  ?.map((rec, index) => (
-                    <Card
-                      key={rec.crop}
-                      className="shadow-lg border-0 bg-white/90 backdrop-blur-sm"
-                    >
-                      <CardContent className="p-3 lg:p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 lg:gap-3">
-                            <div className="text-2xl lg:text-3xl">
-                              {cropMetadata[rec.crop]?.emoji || "🌱"}
-                            </div>
-                            <div>
-                              <h4 className="font-semibold capitalize text-gray-800 text-sm lg:text-base">
-                                {rec.crop}
-                              </h4>
-                              <p className="text-xs lg:text-sm text-gray-600 hidden lg:block">
-                                {cropMetadata[rec.crop]?.category ||
-                                  "Agricultural crop"}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <Badge
-                              className={`${getConfidenceColor(rec.confidence_percentage)} text-xs px-2 py-1`}
-                            >
-                              {rec.confidence_percentage}%
-                            </Badge>
-                            <p className="text-xs text-gray-500 mt-1">
-                              #{index + 1}
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-
-                {(recommendations.predictions?.top_5_recommendations?.length ||
-                  0) > 3 && (
-                  <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm lg:block hidden">
-                    <CardContent className="p-3">
-                      <div className="space-y-2">
-                        {recommendations.predictions?.top_5_recommendations
-                          ?.slice(3)
-                          ?.map((rec) => (
-                            <div
-                              key={rec.crop}
-                              className="flex items-center justify-between text-sm"
-                            >
-                              <div className="flex items-center gap-2">
-                                <span className="text-lg">
-                                  {cropMetadata[rec.crop]?.emoji || "🌱"}
-                                </span>
-                                <span className="capitalize font-medium">
-                                  {rec.crop}
-                                </span>
-                              </div>
-                              <Badge variant="outline" className="text-xs">
-                                {rec.confidence_percentage}%
-                              </Badge>
-                            </div>
-                          ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
             </>
-          )}
-
-          {!recommendations && !loading && (
-            <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm lg:col-span-2 lg:row-span-2">
-              <CardContent className="p-12 text-center lg:flex lg:flex-col lg:justify-center lg:h-full">
-                <div className="text-6xl lg:text-8xl mb-4">🌱</div>
-                <h3 className="text-xl lg:text-2xl font-semibold text-gray-700 mb-2">
-                  Ready to Analyze
-                </h3>
-                <p className="text-gray-500 text-sm lg:text-base max-w-md mx-auto">
-                  Adjust the parameters to match your soil and climate
-                  conditions, then get personalized crop recommendations powered
-                  by AI
-                </p>
-              </CardContent>
-            </Card>
           )}
         </div>
       </div>
