@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 "use client";
 
 import { useEffect, useRef } from "react";
@@ -15,63 +14,31 @@ import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github.css";
 import { Marquee } from "./ui/marquee";
-
-const welcomeCards = [
-  {
-    icon: "🌱",
-    title: "Crop Planning",
-    desc: "Get personalized crop recommendations",
-  },
-  {
-    icon: "🌤️",
-    title: "Weather Insights",
-    desc: "Weather-based farming advice",
-  },
-  {
-    icon: "💰",
-    title: "Market Analysis",
-    desc: "Real-time crop prices and trends",
-  },
-  {
-    icon: "🔬",
-    title: "Health Diagnostics",
-    desc: "Disease detection and treatment",
-  },
-  {
-    icon: "🌿",
-    title: "Organic Farming",
-    desc: "Sustainable farming practices",
-  },
-  {
-    icon: "💧",
-    title: "Irrigation Tips",
-    desc: "Water management solutions",
-  },
-  {
-    icon: "🐝",
-    title: "Pollination",
-    desc: "Improve crop pollination",
-  },
-  {
-    icon: "🌍",
-    title: "Climate Smart",
-    desc: "Adapt to climate changes",
-  },
-];
+import { agricultureAgents } from "@/data/agents";
 
 interface ChatMessagesProps {
   messages: ChatMessage[];
   isLoading?: boolean;
   onTranslateActionMessageAction: (
     messageId: string,
-    targetLanguage: string
+    targetLanguage: string,
   ) => void;
+  onSelectAgentAction?: (agentId: string) => void; // ✅ new prop
 }
+
+const categoryColors: Record<string, string> = {
+  prediction: "bg-pink-100 text-pink-700",
+  advisory: "bg-sky-100 text-sky-700",
+  analysis: "bg-purple-100 text-purple-700",
+  market: "bg-amber-100 text-amber-700",
+  news: "bg-slate-100 text-slate-700",
+};
 
 export function ChatMessages({
   messages,
   isLoading,
   onTranslateActionMessageAction,
+  onSelectAgentAction,
 }: ChatMessagesProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -101,24 +68,46 @@ export function ChatMessages({
               Welcome to PRAGATI
             </h1>
             <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
-              Your intelligent farming companion powered by AI. Get expert
-              advice on crops, weather, market prices, and sustainable farming
-              practices.
+              Your intelligent farming companion powered by AI. Select an AI
+              specialist below to get started.
             </p>
 
             <div className="px-4">
               <Marquee pauseOnHover className="py-4">
-                {welcomeCards.map((item, index) => (
+                {agricultureAgents.map((agent) => (
                   <Card
-                    key={index}
-                    className="cursor-pointer w-64 h-64 flex flex-col justify-center hover:shadow-lg transition-all duration-200 hover:scale-[1.02] border-green-200 hover:border-green-300 mx-2"
+                    key={agent.id}
+                    onClick={() => onSelectAgentAction?.(agent.id)}
+                    className="cursor-pointer w-52 h-60 flex flex-col hover:shadow-lg transition-all duration-200 hover:scale-[1.03] border-green-200 hover:border-green-300 mx-2 rounded-2xl"
                   >
-                    <CardContent className="p-6 text-center h-full flex flex-col items-center justify-center">
-                      <div className="text-4xl mb-4">{item.icon}</div>
-                      <h3 className="font-semibold text-lg mb-2 text-green-700">
-                        {item.title}
+                    <CardContent className="p-5 flex flex-col items-center text-center h-full">
+                      {/* Icon */}
+                      <div className={`mb-3 ${agent.color}`}>{agent.icon}</div>
+
+                      {/* Name */}
+                      <h3 className="font-semibold text-base text-gray-900 mb-2">
+                        {agent.name}
                       </h3>
-                      <p className="text-sm text-gray-600">{item.desc}</p>
+
+                      {/* Category fixed line */}
+                      <div className="h-6 flex items-center justify-center mb-2">
+                        <span
+                          className={`text-xs px-3 py-0.5 rounded-full ${
+                            categoryColors[agent.category] ||
+                            "bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          {agent.category.charAt(0).toUpperCase() +
+                            agent.category.slice(1)}
+                        </span>
+                      </div>
+
+                      {/* Push description to bottom */}
+                      <div className="mt-auto">
+                        <p className="text-sm text-gray-600 leading-snug line-clamp-3">
+                          {agent.description}
+                        </p>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
@@ -145,10 +134,11 @@ export function ChatMessages({
                 className={`max-w-[85%] ${message.role === "user" ? "order-first" : ""}`}
               >
                 <div
-                  className={`rounded-2xl px-4 py-3 ${message.role === "user"
-                    ? "bg-primary text-primary-foreground ml-auto"
-                    : "bg-muted prose prose-sm max-w-none"
-                    }`}
+                  className={`rounded-2xl px-4 py-3 ${
+                    message.role === "user"
+                      ? "bg-primary text-primary-foreground ml-auto"
+                      : "bg-muted prose prose-sm max-w-none"
+                  }`}
                 >
                   {message.role === "assistant" ? (
                     <ReactMarkdown
@@ -187,7 +177,7 @@ export function ChatMessages({
                         {Object.entries(message.translations).map(
                           ([langCode, translation]) => {
                             const language = supportedLanguages.find(
-                              (l) => l.code === langCode
+                              (l) => l.code === langCode,
                             );
                             if (!language) return null;
 
@@ -207,19 +197,21 @@ export function ChatMessages({
                                 <div className="pl-6">{translation}</div>
                               </div>
                             );
-                          }
+                          },
                         )}
                       </div>
                     )}
                 </div>
 
                 <div
-                  className={`flex items-center justify-between mt-2 ${message.role === "user" ? "flex-row-reverse" : ""
-                    }`}
+                  className={`flex items-center justify-between mt-2 ${
+                    message.role === "user" ? "flex-row-reverse" : ""
+                  }`}
                 >
                   <div
-                    className={`text-xs text-muted-foreground ${message.role === "user" ? "text-right" : "text-left"
-                      }`}
+                    className={`text-xs text-muted-foreground ${
+                      message.role === "user" ? "text-right" : "text-left"
+                    }`}
                   >
                     {formatTimestamp(message.timestamp)}
                   </div>

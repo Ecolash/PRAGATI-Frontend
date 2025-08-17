@@ -325,7 +325,7 @@ export default function SignUp() {
 
         {/* Footer */}
         <div className="text-center mt-8 text-sm text-gray-500">
-          <p>© 2024 PRAGATI. Empowering Agriculture with AI.</p>
+          <p>© 2025 PRAGATI. Empowering Agriculture with AI.</p>
         </div>
       </div>
     </div>

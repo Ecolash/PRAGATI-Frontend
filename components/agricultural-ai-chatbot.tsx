@@ -492,6 +492,7 @@ export default function AgriculturalAIChatbot() {
                   messages={currentSession?.messages || []}
                   isLoading={isLoading}
                   onTranslateActionMessageAction={translateMessage}
+                  onSelectAgentAction={selectAgent}
                 />
                 <ChatInput
                   onSendMessageAction={sendMessage}
