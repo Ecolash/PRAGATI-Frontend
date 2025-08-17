@@ -130,6 +130,74 @@ export interface FertilizerRecommendationResponse {
   error?: string;
 }
 
+export interface NewsQueryRequest {
+  query: string;
+}
+
+export interface NewsQueryResponse {
+  success: boolean;
+  response?: string;
+  error?: string;
+}
+
+export interface CropYieldRequest {
+  state_name: string;
+  district_name: string;
+  crop_year: number;
+  season: string;
+  crop: string;
+  temperature: number;
+  humidity: number;
+  soil_moisture: number;
+  area: number;
+  model_type?: string;
+}
+
+export interface CropYieldResponse {
+  status: string;
+  model_used?: string;
+  input_parameters?: {
+    state_name: string;
+    district_name: string;
+    crop_year: number;
+    season: string;
+    crop: string;
+    temperature: number;
+    humidity: number;
+    soil_moisture: number;
+    area_hectares: number;
+  };
+  predictions?: {
+    total_production: number;
+    yield_per_hectare: number;
+    production_unit: string;
+    confidence_interval: {
+      lower_bound: number;
+      upper_bound: number;
+      confidence_level: string;
+    };
+  };
+  analysis?: {
+    productivity_rating: string;
+    seasonal_suitability: string;
+    regional_context: string;
+  };
+  feature_importance?: {
+    temperature: number;
+    humidity: number;
+    soil_moisture: number;
+    area: number;
+    year: number;
+  };
+  metadata?: {
+    prediction_timestamp: string;
+    model_version: string;
+    data_source: string;
+  };
+  error_message?: string;
+  error_timestamp?: string;
+}
+
 class AgriculturalAPIService {
   private baseUrl: string;
 
@@ -574,6 +642,131 @@ class AgriculturalAPIService {
         error instanceof Error
           ? error.message
           : "Failed to get fertilizer recommendation"
+      );
+    }
+  }
+
+  async getAgriculturalNews(
+    request: NewsQueryRequest
+  ): Promise<NewsQueryResponse> {
+    try {
+      console.log("=== AGRICULTURAL NEWS TOOL DEBUG ===");
+      console.log("Request Query:", request.query);
+
+      const response = await fetch(`${this.baseUrl}/api/v1/agent/agri-news`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ query: request.query }),
+      });
+
+      console.log("Response Status:", response.status);
+      console.log("Response OK:", response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error Response Body:", errorText);
+        throw new Error(
+          `Agricultural news failed: ${response.status} - ${errorText}`
+        );
+      }
+
+      const result = await response.json();
+      console.log("API Response:", result);
+      console.log("API Response Type:", typeof result);
+
+      // If the result is a string, try to parse it as JSON
+      if (typeof result === "string") {
+        console.log("Result is a string, attempting to parse JSON...");
+        try {
+          const parsedResult = JSON.parse(result);
+          console.log("Parsed result:", parsedResult);
+          return parsedResult;
+        } catch (parseError) {
+          console.error("Failed to parse JSON string:", parseError);
+          throw new Error("API returned invalid JSON string");
+        }
+      }
+
+      return result;
+    } catch (error) {
+      console.error("Agricultural news error:", error);
+      throw new Error(
+        error instanceof Error
+          ? error.message
+          : "Failed to get agricultural news"
+      );
+    }
+  }
+
+  async getCropYieldPrediction(
+    request: CropYieldRequest
+  ): Promise<CropYieldResponse> {
+    try {
+      console.log("=== CROP YIELD PREDICTION TOOL DEBUG ===");
+      console.log("Request Parameters:", request);
+
+      const url = new URL(`${this.baseUrl}/api/v1/crop-yield/predict`);
+      url.searchParams.append("state_name", request.state_name);
+      url.searchParams.append("district_name", request.district_name);
+      url.searchParams.append("crop_year", request.crop_year.toString());
+      url.searchParams.append("season", request.season);
+      url.searchParams.append("crop", request.crop);
+      url.searchParams.append("temperature", request.temperature.toString());
+      url.searchParams.append("humidity", request.humidity.toString());
+      url.searchParams.append(
+        "soil_moisture",
+        request.soil_moisture.toString()
+      );
+      url.searchParams.append("area", request.area.toString());
+      url.searchParams.append("model_type", request.model_type || "stacked_2");
+
+      console.log("API URL with query params:", url.toString());
+      console.log("======================================");
+
+      const response = await fetch(url.toString(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      console.log("Response Status:", response.status);
+      console.log("Response OK:", response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error Response Body:", errorText);
+        throw new Error(
+          `Crop yield prediction failed: ${response.status} - ${errorText}`
+        );
+      }
+
+      const result = await response.json();
+      console.log("API Response:", result);
+      console.log("API Response Type:", typeof result);
+
+      // If the result is a string, try to parse it as JSON
+      if (typeof result === "string") {
+        console.log("Result is a string, attempting to parse JSON...");
+        try {
+          const parsedResult = JSON.parse(result);
+          console.log("Parsed result:", parsedResult);
+          return parsedResult;
+        } catch (parseError) {
+          console.error("Failed to parse JSON string:", parseError);
+          throw new Error("API returned invalid JSON string");
+        }
+      }
+
+      return result;
+    } catch (error) {
+      console.error("Crop yield prediction error:", error);
+      throw new Error(
+        error instanceof Error
+          ? error.message
+          : "Failed to get crop yield prediction"
       );
     }
   }
