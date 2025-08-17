@@ -26,6 +26,23 @@ export interface ChatMessage {
     confidence?: number;
     sources?: string[];
     agent_type?: string;
+    // Crop recommendation agent specific data
+    crop_names?: string[];
+    confidence_scores?: number[];
+    justifications?: string[];
+    // Weather forecast agent specific data
+    success?: boolean;
+    error?: string;
+    // Pest prediction agent specific data
+    possible_pest_names?: string[];
+    description?: string;
+    pesticide_recommendation?: string;
+    // Crop disease detection agent specific data
+    diseases?: string[];
+    disease_probabilities?: number[];
+    symptoms?: string[];
+    treatments?: string[];
+    prevention_tips?: string[];
   };
   error?: boolean;
 }
