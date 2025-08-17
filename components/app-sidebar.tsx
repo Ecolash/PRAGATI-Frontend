@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 "use client";
 
 import { useState } from "react";
@@ -39,7 +38,7 @@ export function AppSidebar({
   onSelectAgentAction,
 }: StreamlinedSidebarProps) {
   const [activeSection, setActiveSection] = useState<"agents" | "history">(
-    "agents"
+    "agents",
   );
   const router = useRouter();
 
@@ -51,7 +50,7 @@ export function AppSidebar({
       acc[agent.category].push(agent);
       return acc;
     },
-    {} as Record<string, typeof agricultureAgents>
+    {} as Record<string, typeof agricultureAgents>,
   );
 
   return (
@@ -131,7 +130,7 @@ export function AppSidebar({
         {activeSection === "agents" ? (
           <SidebarGroup>
             <SidebarGroupContent>
-              <ScrollArea className="h-[400px]">
+              <ScrollArea className="h-[450px]">
                 <SidebarMenu className="space-y-1">
                   {/* Prediction Tools */}
                   {groupedAgents.prediction?.map((agent) => (
@@ -149,8 +148,16 @@ export function AppSidebar({
                           <div className="text-sm font-medium text-gray-900 truncate">
                             {agent.name}
                           </div>
-                          <div className="text-xs text-gray-500 truncate">
-                            {agent.description}
+                          <div className="relative group">
+                            <div className="relative group flex-1 min-w-0">
+                              <div className="text-xs text-gray-500 truncate peer">
+                                {agent.description}
+                              </div>
+                              {/* Tooltip */}
+                              <div className="absolute left-0 top-full z-50 hidden w-64 p-2 mt-1 text-xs text-gray-700 bg-white border border-gray-200 rounded shadow-lg peer-hover:block group-hover:block">
+                                {agent.description}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </SidebarMenuButton>
