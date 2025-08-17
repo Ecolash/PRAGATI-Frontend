@@ -3,7 +3,13 @@ export interface AgricultureAgent {
   name: string;
   description: string;
   icon: React.ReactNode;
-  category: "prediction" | "advisory" | "analysis" | "market" | "news";
+  category:
+    | "prediction"
+    | "advisory"
+    | "analysis"
+    | "market"
+    | "news"
+    | "research";
   color: string;
   mode?: "tool" | "agent" | "both";
 }

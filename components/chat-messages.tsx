@@ -32,6 +32,7 @@ const categoryColors: Record<string, string> = {
   analysis: "bg-purple-100 text-purple-700",
   market: "bg-amber-100 text-amber-700",
   news: "bg-slate-100 text-slate-700",
+  research: "bg-indigo-100 text-indigo-700",
 };
 
 export function ChatMessages({

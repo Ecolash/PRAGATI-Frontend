@@ -235,6 +235,28 @@ export function AppSidebar({
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
+                  {groupedAgents.research?.map((agent) => (
+                    <SidebarMenuItem key={agent.id}>
+                      <SidebarMenuButton
+                        onClick={() => onSelectAgentAction(agent.id)}
+                        className="gap-3 hover:bg-gray-50 group h-12"
+                      >
+                        <div
+                          className={`${agent.color} group-hover:scale-110 transition-transform`}
+                        >
+                          {agent.icon}
+                        </div>
+                        <div className="flex-1 min-w-0 text-left">
+                          <div className="text-sm font-medium text-gray-900 truncate">
+                            {agent.name}
+                          </div>
+                          <div className="text-xs text-gray-500 truncate">
+                            {agent.description}
+                          </div>
+                        </div>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
 
                   {/* News & Updates */}
                   {groupedAgents.news?.map((agent) => (
