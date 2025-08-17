@@ -379,7 +379,6 @@ export default function AgriculturalAIChatbot() {
             selectedLanguage={selectedLanguage}
             disabled={isLoading}
             placeholder={getAgentPresetMessage(currentSession.agent.id)}
-            presetMessage={getAgentPresetMessage(currentSession.agent.id)}
           />
         </div>
       );
@@ -504,6 +503,7 @@ export default function AgriculturalAIChatbot() {
                       ? `Ask about ${currentSession.agent.name.toLowerCase()}...`
                       : "Message PRAGATI..."
                   }
+                  switchMode={true}
                 />
               </>
             )}
