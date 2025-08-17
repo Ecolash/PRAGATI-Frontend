@@ -63,6 +63,55 @@ export interface WeatherForecastResponse {
   error?: string;
 }
 
+export interface CropRecommendationAgentRequest {
+  prompt: string;
+}
+
+export interface CropRecommendationAgentResponse {
+  crop_names: string[];
+  confidence_scores: number[];
+  justifications: string[];
+}
+
+export interface WeatherForecastAgentRequest {
+  query: string;
+}
+
+export interface WeatherForecastAgentResponse {
+  success: boolean;
+  response?: string;
+  error?: string;
+}
+
+export interface PestPredictionAgentRequest {
+  query: string;
+  imageFile?: File;
+}
+
+export interface PestPredictionAgentResponse {
+  success: boolean;
+  possible_pest_names?: string[];
+  description?: string;
+  pesticide_recommendation?: string;
+  error?: string;
+}
+
+export interface CropDiseaseDetectionAgentRequest {
+  imageFile: File;
+  query?: string;
+}
+
+export interface CropDiseaseDetectionAgentResponse {
+  success: boolean;
+  diseases?: string[];
+  disease_probabilities?: number[];
+  symptoms?: string[];
+  Treatments?: string[];
+  prevention_tips?: string[];
+  image_path?: string;
+  error?: string;
+}
+
 export interface CropRecommendationRequest {
   N: number;
   P: number;
@@ -768,6 +817,176 @@ class AgriculturalAPIService {
           ? error.message
           : "Failed to get crop yield prediction"
       );
+    }
+  }
+
+  // New method for crop recommendation agent mode
+  async getCropRecommendationAgent(
+    request: CropRecommendationAgentRequest
+  ): Promise<CropRecommendationAgentResponse> {
+    try {
+      console.log("=== CROP RECOMMENDATION AGENT DEBUG ===");
+      console.log("Prompt:", request.prompt);
+
+      const response = await fetch(
+        `${this.baseUrl}/api/v1/crop-recommender/crop-recommendation`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            prompt: request.prompt,
+          }),
+        }
+      );
+
+      console.log("Response Status:", response.status);
+      console.log("Response OK:", response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error Response Body:", errorText);
+        throw new Error(
+          `Crop recommendation agent failed: ${response.status} - ${errorText}`
+        );
+      }
+
+      const data = await response.json();
+      console.log("API Response:", data);
+
+      return {
+        crop_names: data.crop_names || [],
+        confidence_scores: data.confidence_scores || [],
+        justifications: data.justifications || [],
+      };
+    } catch (error) {
+      console.error("Error calling crop recommendation agent:", error);
+      throw new Error(
+        `Failed to get crop recommendation response: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+    }
+  }
+
+  // New method for weather forecasting agent mode
+  async getWeatherForecastAgent(
+    request: WeatherForecastAgentRequest
+  ): Promise<WeatherForecastAgentResponse> {
+    try {
+      console.log("=== WEATHER FORECAST AGENT DEBUG ===");
+      console.log("Query:", request.query);
+
+      const response = await fetch(`${this.baseUrl}/api/v1/weather/forecast`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: request.query,
+        }),
+      });
+
+      console.log("Response Status:", response.status);
+      console.log("Response OK:", response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error Response Body:", errorText);
+        throw new Error(
+          `Weather forecast agent failed: ${response.status} - ${errorText}`
+        );
+      }
+
+      const data = await response.json();
+      console.log("API Response:", data);
+
+      return {
+        success: data.success || false,
+        response: data.response || null,
+        error: data.error || null,
+      };
+    } catch (error) {
+      console.error("Error calling weather forecast agent:", error);
+      throw new Error(
+        `Failed to get weather forecast response: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+    }
+  }
+
+  // New method for pest prediction agent mode
+  async getPestPredictionAgent(
+    request: PestPredictionAgentRequest
+  ): Promise<PestPredictionAgentResponse> {
+    try {
+      console.log("=== PEST PREDICTION AGENT DEBUG ===");
+      console.log("Query:", request.query);
+      if (request.imageFile) {
+        console.log(
+          "Image file:",
+          request.imageFile.name,
+          request.imageFile.size
+        );
+      }
+
+      // Use the existing predictPest method
+      const result = await this.predictPest(request.query, request.imageFile);
+
+      console.log("Pest prediction result:", result);
+
+      return {
+        success: result.success,
+        possible_pest_names: result.possible_pest_names,
+        description: result.description,
+        pesticide_recommendation: result.pesticide_recommendation,
+        error: result.error,
+      };
+    } catch (error) {
+      console.error("Error calling pest prediction agent:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Unknown error occurred",
+      };
+    }
+  }
+
+  // New method for crop disease detection agent mode
+  async getCropDiseaseDetectionAgent(
+    request: CropDiseaseDetectionAgentRequest
+  ): Promise<CropDiseaseDetectionAgentResponse> {
+    try {
+      console.log("=== CROP DISEASE DETECTION AGENT DEBUG ===");
+      console.log(
+        "Image file:",
+        request.imageFile.name,
+        request.imageFile.size
+      );
+      if (request.query) {
+        console.log("Query:", request.query);
+      }
+
+      // Use the existing detectCropDisease method
+      const result = await this.detectCropDisease(request.imageFile);
+
+      console.log("Crop disease detection result:", result);
+
+      return {
+        success: result.success,
+        diseases: result.diseases,
+        disease_probabilities: result.disease_probabilities,
+        symptoms: result.symptoms,
+        Treatments: result.Treatments,
+        prevention_tips: result.prevention_tips,
+        image_path: result.image_path,
+        error: result.error,
+      };
+    } catch (error) {
+      console.error("Error calling crop disease detection agent:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Unknown error occurred",
+      };
     }
   }
 }
