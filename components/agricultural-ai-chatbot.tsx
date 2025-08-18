@@ -708,7 +708,7 @@ export default function AgriculturalAIChatbot() {
 
         setChatSessions((prev) =>
           prev.map((session) =>
-            session.id === currentSessionId
+            session.id === sessionId // ✅ use local sessionId, never stale
               ? {
                   ...session,
                   messages: [...session.messages, assistantMessage],
