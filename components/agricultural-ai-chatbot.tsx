@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
@@ -43,7 +42,7 @@ export default function AgriculturalAIChatbot() {
   }, []);
 
   const currentSession = chatSessions.find(
-    (session) => session.id === currentSessionId
+    (session) => session.id === currentSessionId,
   );
 
   console.log("Current Session ID:", currentSessionId);
@@ -84,7 +83,7 @@ export default function AgriculturalAIChatbot() {
     const saveCurrentSession = async () => {
       if (currentSessionId) {
         const sessionToSave = chatSessions.find(
-          (s) => s.id === currentSessionId
+          (s) => s.id === currentSessionId,
         );
         if (sessionToSave && sessionToSave.messages.length > 0) {
           try {
@@ -152,7 +151,7 @@ export default function AgriculturalAIChatbot() {
         setCurrentSessionId(newSession.id);
       }
     },
-    [selectedLanguage]
+    [selectedLanguage],
   );
 
   const handleLanguageChange = useCallback((language: Language) => {
@@ -183,7 +182,7 @@ export default function AgriculturalAIChatbot() {
         //console.log("Calling translation API...");
         const translationResult = await agriculturalAPI.translateText(
           message.content,
-          targetLanguage
+          targetLanguage,
         );
         //console.log("Translation Result:", translationResult);
 
@@ -201,11 +200,11 @@ export default function AgriculturalAIChatbot() {
                             [targetLanguage]: translationResult.translated_text,
                           },
                         }
-                      : msg
+                      : msg,
                   ),
                 }
-              : session
-          )
+              : session,
+          ),
         );
         //console.log("Translation stored successfully");
       } catch (error: any) {
@@ -225,24 +224,37 @@ export default function AgriculturalAIChatbot() {
                             [targetLanguage]: `[Translation unavailable] ${msg.content}`,
                           },
                         }
-                      : msg
+                      : msg,
                   ),
                 }
-              : session
-          )
+              : session,
+          ),
         );
       }
     },
-    [currentSessionId, chatSessions]
+    [currentSessionId, chatSessions],
   );
 
   const sendMessage = useCallback(
     async (content: string, files?: File[]) => {
-      if (!currentSessionId) {
-        createNewChat();
-        return;
+      let sessionId = currentSessionId;
+
+      if (!sessionId) {
+        const newSession: ChatSession = {
+          id: Date.now().toString(),
+          title: "New Chat",
+          messages: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          language: selectedLanguage,
+          agent: undefined,
+        };
+        setChatSessions((prev) => [newSession, ...prev]);
+        setCurrentSessionId(newSession.id);
+        sessionId = newSession.id; // ✅ use the new session
       }
 
+      // now always proceed to send the message
       const userMessage: ChatMessage = {
         id: Date.now().toString(),
         role: "user",
@@ -260,7 +272,7 @@ export default function AgriculturalAIChatbot() {
 
       setChatSessions((prev) =>
         prev.map((session) =>
-          session.id === currentSessionId
+          session.id === sessionId
             ? {
                 ...session,
                 messages: [...session.messages, userMessage],
@@ -270,8 +282,8 @@ export default function AgriculturalAIChatbot() {
                     : session.title,
                 updatedAt: new Date(),
               }
-            : session
-        )
+            : session,
+        ),
       );
 
       setIsLoading(true);
@@ -605,7 +617,7 @@ export default function AgriculturalAIChatbot() {
           // Use specialized workflow agent for deep research
           const mode = toolsEnabled ? "tooling" : "rag";
           console.log(
-            `Using workflow agent for deep research in ${mode} mode (tools ${toolsEnabled ? "enabled" : "disabled"})`
+            `Using workflow agent for deep research in ${mode} mode (tools ${toolsEnabled ? "enabled" : "disabled"})`,
           );
           const agentResponse = await agriculturalAPI.getWorkflowAgent({
             query: content,
@@ -649,7 +661,7 @@ export default function AgriculturalAIChatbot() {
           console.log(
             "Using workflow agent for generic/multilingual support ",
             agentMode,
-            currentSession?.agent?.id
+            currentSession?.agent?.id,
           );
 
           // Check if this is a translation request or multilingual query
@@ -663,7 +675,7 @@ export default function AgriculturalAIChatbot() {
           const mode = shouldUseRAG ? "rag" : "tooling";
 
           console.log(
-            `Using workflow agent in ${mode} mode (tools ${toolsEnabled ? "enabled" : "disabled"}, translation query: ${isTranslationQuery})`
+            `Using workflow agent in ${mode} mode (tools ${toolsEnabled ? "enabled" : "disabled"}, translation query: ${isTranslationQuery})`,
           );
 
           const agentResponse = await agriculturalAPI.getWorkflowAgent({
@@ -702,8 +714,8 @@ export default function AgriculturalAIChatbot() {
                   messages: [...session.messages, assistantMessage],
                   updatedAt: new Date(),
                 }
-              : session
-          )
+              : session,
+          ),
         );
       } catch (error) {
         console.error("Failed to get AI response:", error);
@@ -727,8 +739,8 @@ export default function AgriculturalAIChatbot() {
                   messages: [...session.messages, errorMessage],
                   updatedAt: new Date(),
                 }
-              : session
-          )
+              : session,
+          ),
         );
       } finally {
         setIsLoading(false);
@@ -740,7 +752,7 @@ export default function AgriculturalAIChatbot() {
       selectedLanguage,
       agentMode,
       currentSession,
-    ]
+    ],
   );
 
   const getAgentPresetMessage = (agentId?: string) => {

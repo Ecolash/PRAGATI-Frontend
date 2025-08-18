@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 "use client";
 
 import type React from "react";
@@ -84,7 +83,7 @@ export function ChatInput({
     const selectedFiles = Array.from(event.target.files || []);
     const validFiles = selectedFiles.filter(
       (file) =>
-        file.type.startsWith("image/") || file.type === "application/pdf"
+        file.type.startsWith("image/") || file.type === "application/pdf",
     );
     setFiles((prev) => [...prev, ...validFiles].slice(0, 3));
   };
@@ -168,24 +167,26 @@ export function ChatInput({
                 <div className="flex items-center justify-between">
                   {/* Left controls group */}
                   <div className="flex items-center gap-1">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={disabled || files.length >= 3}
-                          className="h-8 w-8 p-0 hover:bg-white hover:shadow-sm text-gray-600 hover:text-gray-800 shrink-0 transition-all duration-200"
-                        >
-                          <Paperclip className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <span className="whitespace-nowrap">
-                          Attach files ({files.length}/3)
-                        </span>
-                      </TooltipContent>
-                    </Tooltip>
+                    {!switchMode && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={disabled || files.length >= 3}
+                            className="h-8 w-8 p-0 hover:bg-white hover:shadow-sm text-gray-600 hover:text-gray-800 shrink-0 transition-all duration-200"
+                          >
+                            <Paperclip className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <span className="whitespace-nowrap">
+                            Attach files ({files.length}/3)
+                          </span>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
 
                     <AnimatedVoiceInput
                       onVoiceInputAction={handleVoiceInput}
