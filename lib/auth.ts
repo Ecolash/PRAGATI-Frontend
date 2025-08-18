@@ -69,6 +69,8 @@ export const authOptions = {
   pages: {
     signIn: "/api/auth/signin",
   },
+  // Allow flexible URL handling for development
+  trustHost: true,
   callbacks: {
     jwt: async ({ user, token }: any) => {
       if (user) {

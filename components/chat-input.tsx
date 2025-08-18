@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 "use client";
 
 import type React from "react";
@@ -31,6 +32,7 @@ interface CleanChatInputProps {
   disabled?: boolean;
   placeholder?: string;
   switchMode?: boolean;
+  onToolsEnabledChange?: (enabled: boolean) => void;
 }
 
 export function ChatInput({
@@ -40,6 +42,7 @@ export function ChatInput({
   disabled = false,
   placeholder = "Message PRAGATI...",
   switchMode = false,
+  onToolsEnabledChange,
 }: CleanChatInputProps) {
   const [message, setMessage] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -81,7 +84,7 @@ export function ChatInput({
     const selectedFiles = Array.from(event.target.files || []);
     const validFiles = selectedFiles.filter(
       (file) =>
-        file.type.startsWith("image/") || file.type === "application/pdf",
+        file.type.startsWith("image/") || file.type === "application/pdf"
     );
     setFiles((prev) => [...prev, ...validFiles].slice(0, 3));
   };
@@ -93,6 +96,11 @@ export function ChatInput({
   useEffect(() => {
     adjustTextareaHeight();
   }, [message]);
+
+  // Notify parent when toolsEnabled changes
+  useEffect(() => {
+    onToolsEnabledChange?.(toolsEnabled);
+  }, [toolsEnabled, onToolsEnabledChange]);
 
   return (
     <div className="border-t border-gray-200 bg-white">

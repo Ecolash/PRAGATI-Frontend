@@ -24,7 +24,7 @@ export interface AgriculturalQueryResponse {
 
 export interface CropDiseaseDetectionResponse {
   success: boolean;
-  diseases?: string[];
+  diseases?: string[]; // Updated to match the new schema (list of strings)
   disease_probabilities?: number[];
   symptoms?: string[];
   Treatments?: string[];
@@ -97,7 +97,7 @@ export interface PestPredictionAgentResponse {
 }
 
 export interface CropDiseaseDetectionAgentRequest {
-  imageFile: File;
+  imageFile?: File; // Now optional since the new API supports detection without images
   query?: string;
 }
 
@@ -109,6 +109,63 @@ export interface CropDiseaseDetectionAgentResponse {
   Treatments?: string[];
   prevention_tips?: string[];
   image_path?: string;
+  error?: string;
+}
+
+export interface MarketPriceAgentRequest {
+  query: string;
+}
+
+export interface MarketPriceAgentResponse {
+  success: boolean;
+  response?: string;
+  error?: string;
+}
+
+export interface RiskManagementAgentRequest {
+  query: string;
+}
+
+export interface RiskManagementAgentResponse {
+  success: boolean;
+  risk_analysis?: any;
+  recommendations?: string[];
+  timestamp?: string;
+  error?: string;
+}
+
+export interface WorkflowAgentRequest {
+  query: string;
+  mode: "rag" | "tooling";
+  image?: File;
+}
+
+export interface WorkflowAgentResponse {
+  success: boolean;
+  response?: string;
+  answer?: string;
+  answer_quality_grade?: any;
+  processing_time?: number;
+  error?: string;
+}
+
+export interface CropYieldAgentRequest {
+  query: string;
+}
+
+export interface CropYieldAgentResponse {
+  success: boolean;
+  result?: string;
+  error?: string;
+}
+
+export interface CreditPolicyMarketAgentRequest {
+  query: string;
+}
+
+export interface CreditPolicyMarketAgentResponse {
+  success: boolean;
+  response?: string;
   error?: string;
 }
 
@@ -956,17 +1013,44 @@ class AgriculturalAPIService {
   ): Promise<CropDiseaseDetectionAgentResponse> {
     try {
       console.log("=== CROP DISEASE DETECTION AGENT DEBUG ===");
-      console.log(
-        "Image file:",
-        request.imageFile.name,
-        request.imageFile.size
-      );
+
+      if (request.imageFile) {
+        console.log(
+          "Image file:",
+          request.imageFile.name,
+          request.imageFile.size
+        );
+      } else {
+        console.log("No image file provided - using text-only analysis");
+      }
+
       if (request.query) {
         console.log("Query:", request.query);
       }
 
-      // Use the existing detectCropDisease method
-      const result = await this.detectCropDisease(request.imageFile);
+      const formData = new FormData();
+
+      // Only append image if provided
+      if (request.imageFile) {
+        formData.append("image", request.imageFile);
+      }
+
+      // Always append query parameter (defaults to "describe the diseases" if not provided)
+      formData.append("query", request.query || "describe the diseases");
+
+      const response = await fetch(
+        `${config.apiUrl}/api/v1/cropdisease/detect`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result: CropDiseaseDetectionResponse = await response.json();
 
       console.log("Crop disease detection result:", result);
 
@@ -986,6 +1070,266 @@ class AgriculturalAPIService {
         success: false,
         error:
           error instanceof Error ? error.message : "Unknown error occurred",
+      };
+    }
+  }
+
+  // New method for market price agent mode
+  async getMarketPriceAgent(
+    request: MarketPriceAgentRequest
+  ): Promise<MarketPriceAgentResponse> {
+    try {
+      console.log("=== MARKET PRICE AGENT DEBUG ===");
+      console.log("Query:", request.query);
+
+      const response = await fetch(
+        `${this.baseUrl}/api/v1/marketprice/analyze`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            query: request.query,
+          }),
+        }
+      );
+
+      console.log("Response Status:", response.status);
+      console.log("Response OK:", response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error Response Body:", errorText);
+        throw new Error(
+          `Market price agent failed: ${response.status} - ${errorText}`
+        );
+      }
+
+      const data = await response.json();
+      console.log("API Response:", data);
+
+      return {
+        success: data.success || false,
+        response: data.response || null,
+        error: data.error || null,
+      };
+    } catch (error) {
+      console.error("Error calling market price agent:", error);
+      throw new Error(
+        `Failed to get market price response: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+    }
+  }
+
+  // New method for risk management agent mode
+  async getRiskManagementAgent(
+    request: RiskManagementAgentRequest
+  ): Promise<RiskManagementAgentResponse> {
+    try {
+      console.log("=== RISK MANAGEMENT AGENT DEBUG ===");
+      console.log("Query:", request.query);
+
+      const response = await fetch(`${this.baseUrl}/api/v1/risk/analyze`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: request.query,
+        }),
+      });
+
+      console.log("Response Status:", response.status);
+      console.log("Response OK:", response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error Response Body:", errorText);
+        throw new Error(
+          `Risk management agent failed: ${response.status} - ${errorText}`
+        );
+      }
+
+      const data = await response.json();
+      console.log("API Response:", data);
+
+      return {
+        success: data.success || false,
+        risk_analysis: data.risk_analysis || null,
+        recommendations: data.recommendations || null,
+        timestamp: data.timestamp || null,
+        error: data.error || null,
+      };
+    } catch (error) {
+      console.error("Error calling risk management agent:", error);
+      throw new Error(
+        `Failed to get risk management response: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+    }
+  }
+
+  // New method for workflow agent mode (generic multilingual agent)
+  async getWorkflowAgent(
+    request: WorkflowAgentRequest
+  ): Promise<WorkflowAgentResponse> {
+    try {
+      console.log("=== WORKFLOW AGENT DEBUG ===");
+      console.log("Query:", request.query);
+      console.log("Mode:", request.mode);
+      console.log("Has Image:", !!request.image);
+
+      let response;
+
+      if (request.image) {
+        // Use the image endpoint for queries with images
+        const formData = new FormData();
+        formData.append("query", request.query);
+        formData.append("image", request.image);
+
+        response = await fetch(
+          `${this.baseUrl}/api/v1/workflow/process-with-image`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+      } else {
+        // Use the regular endpoint for text-only queries
+        response = await fetch(`${this.baseUrl}/api/v1/workflow/process`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            query: request.query,
+            mode: request.mode,
+          }),
+        });
+      }
+
+      console.log("Response Status:", response.status);
+      console.log("Response OK:", response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error Response Body:", errorText);
+        throw new Error(
+          `Workflow agent failed: ${response.status} - ${errorText}`
+        );
+      }
+
+      const data = await response.json();
+      console.log("API Response:", data);
+
+      return {
+        success: true,
+        response: data.answer || data.response || null,
+        answer: data.answer || data.response || null,
+        answer_quality_grade: data.answer_quality_grade || null,
+        processing_time: data.processing_time || null,
+        error: data.error || null,
+      };
+    } catch (error) {
+      console.error("Error calling workflow agent:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  }
+
+  // New method for crop yield agent mode
+  async getCropYieldAgent(
+    request: CropYieldAgentRequest
+  ): Promise<CropYieldAgentResponse> {
+    try {
+      console.log("=== CROP YIELD AGENT DEBUG ===");
+      console.log("Query:", request.query);
+
+      const response = await fetch(`${config.apiUrl}/api/v1/agent/predict`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: request.query,
+        }),
+      });
+
+      console.log("Response Status:", response.status);
+      console.log("Response OK:", response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error Response Body:", errorText);
+        throw new Error(
+          `Crop yield agent failed: ${response.status} - ${errorText}`
+        );
+      }
+
+      const data = await response.json();
+      console.log("API Response:", data);
+
+      return {
+        success: true,
+        result: data.result || null,
+        error: data.error || null,
+      };
+    } catch (error) {
+      console.error("Error calling crop yield agent:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  }
+
+  // New method for credit policy market agent mode
+  async getCreditPolicyMarketAgent(
+    request: CreditPolicyMarketAgentRequest
+  ): Promise<CreditPolicyMarketAgentResponse> {
+    try {
+      console.log("=== CREDIT POLICY MARKET AGENT DEBUG ===");
+      console.log("Query:", request.query);
+
+      const response = await fetch(
+        `${config.apiUrl}/api/v1/creditpolicy/analyze`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            query: request.query,
+          }),
+        }
+      );
+
+      console.log("Response Status:", response.status);
+      console.log("Response OK:", response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error Response Body:", errorText);
+        throw new Error(
+          `Credit policy market agent failed: ${response.status} - ${errorText}`
+        );
+      }
+
+      const data = await response.json();
+      console.log("API Response:", data);
+
+      return {
+        success: data.success || false,
+        response: data.response || null,
+        error: data.error || null,
+      };
+    } catch (error) {
+      console.error("Error calling credit policy market agent:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
