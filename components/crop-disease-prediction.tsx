@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 "use client";
 
 import type React from "react";
@@ -64,21 +65,21 @@ const cropTypes = [
 ];
 
 const getSeverityColor = (probability: number): string => {
-  if (probability >= 80) return "bg-red-100 text-red-800 border-red-200";
-  if (probability >= 50)
+  if (probability >= 0.8) return "bg-red-100 text-red-800 border-red-200";
+  if (probability >= 0.5)
     return "bg-yellow-100 text-yellow-800 border-yellow-200";
   return "bg-green-100 text-green-800 border-green-200";
 };
 
 const getSeverityLabel = (probability: number): string => {
-  if (probability >= 80) return "High";
-  if (probability >= 50) return "Medium";
+  if (probability >= 0.8) return "High";
+  if (probability >= 0.5) return "Medium";
   return "Low";
 };
 
 const getConfidenceColor = (probability: number): string => {
-  if (probability >= 80) return "text-red-600";
-  if (probability >= 60) return "text-yellow-600";
+  if (probability >= 0.8) return "text-red-600";
+  if (probability >= 0.5) return "text-yellow-600";
   return "text-green-600";
 };
 
@@ -364,7 +365,7 @@ export function CropDiseaseDetection() {
                                           {getSeverityLabel(probability)} •{" "}
                                           <span
                                             className={getConfidenceColor(
-                                              probability,
+                                              probability
                                             )}
                                           >
                                             {probability.toFixed(1)}%
@@ -372,7 +373,7 @@ export function CropDiseaseDetection() {
                                         </span>
                                       </li>
                                     );
-                                  },
+                                  }
                                 )}
                               </ul>
                             </AccordionContent>
@@ -391,7 +392,7 @@ export function CropDiseaseDetection() {
                                 {analysisResult.symptoms.map(
                                   (symptom, index) => (
                                     <li key={index}>{symptom}</li>
-                                  ),
+                                  )
                                 )}
                               </ul>
                             </AccordionContent>
@@ -410,7 +411,7 @@ export function CropDiseaseDetection() {
                                 {analysisResult.treatments.map(
                                   (treatment, index) => (
                                     <li key={index}>{treatment}</li>
-                                  ),
+                                  )
                                 )}
                               </ul>
                             </AccordionContent>
@@ -427,7 +428,7 @@ export function CropDiseaseDetection() {
                                 {analysisResult.prevention_tips.map(
                                   (tip, index) => (
                                     <li key={index}>{tip}</li>
-                                  ),
+                                  )
                                 )}
                               </ul>
                             </AccordionContent>

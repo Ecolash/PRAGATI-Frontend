@@ -67,7 +67,7 @@ export const agricultureAgents: AgricultureAgent[] = [
     icon: <Beaker className="h-4 w-4" />,
     category: "advisory",
     color: "text-orange-600",
-    mode: "both",
+    mode: "tool",
   },
   {
     id: "pest-prediction",
@@ -98,8 +98,9 @@ export const agricultureAgents: AgricultureAgent[] = [
   },
   {
     id: "credit-loan-policy",
-    name: "Credit & Loan Policy",
-    description: "Assist farmers with loans, subsidies, and credit policies",
+    name: "Credit Policy & Market Intelligence",
+    description:
+      "Agricultural finance expert providing market trends, credit policy analysis, risk assessment, and strategic financial recommendations",
     icon: <Landmark className="h-4 w-4" />,
     category: "market",
     color: "text-indigo-600",

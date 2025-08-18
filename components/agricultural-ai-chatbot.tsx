@@ -33,8 +33,14 @@ export default function AgriculturalAIChatbot() {
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [agentMode, setAgentMode] = useState(false);
+  const [toolsEnabled, setToolsEnabled] = useState(true);
 
   const { saveChatSession, loadChatHistory, isSaving } = useChatHistory();
+
+  // Memoized callback to handle tools enabled changes
+  const handleToolsEnabledChange = useCallback((enabled: boolean) => {
+    setToolsEnabled(enabled);
+  }, []);
 
   const currentSession = chatSessions.find(
     (session) => session.id === currentSessionId
@@ -271,13 +277,6 @@ export default function AgriculturalAIChatbot() {
       setIsLoading(true);
 
       try {
-        // Prepare context for the API call
-        const previousMessages =
-          currentSession?.messages.slice(-5).map((msg) => ({
-            role: msg.role,
-            content: msg.content,
-          })) || [];
-
         let assistantMessage: ChatMessage;
 
         // Check if we're in agent mode and have a specific agent
@@ -341,6 +340,62 @@ export default function AgriculturalAIChatbot() {
               error: agentResponse.error,
             },
           };
+        } else if (agentMode && currentSession?.agent?.id === "crop-yield") {
+          // Use specialized crop yield agent endpoint
+          console.log("Using crop yield agent");
+          const agentResponse = await agriculturalAPI.getCropYieldAgent({
+            query: content,
+          });
+
+          // Use the response from the agent
+          const responseContent = agentResponse.success
+            ? agentResponse.result ||
+              "I received your crop yield query but couldn't generate a response."
+            : `Crop yield prediction error: ${agentResponse.error || "Unknown error occurred"}`;
+
+          assistantMessage = {
+            id: (Date.now() + 1).toString(),
+            role: "assistant",
+            content: responseContent,
+            timestamp: new Date(),
+            language: selectedLanguage,
+            metadata: {
+              agent_type: "crop-yield",
+              success: agentResponse.success,
+              result: agentResponse.result,
+              error: agentResponse.error,
+            },
+          };
+        } else if (
+          agentMode &&
+          currentSession?.agent?.id === "credit-loan-policy"
+        ) {
+          // Use specialized credit policy market agent endpoint
+          console.log("Using credit policy market agent");
+          const agentResponse =
+            await agriculturalAPI.getCreditPolicyMarketAgent({
+              query: content,
+            });
+
+          // Use the response from the agent
+          const responseContent = agentResponse.success
+            ? agentResponse.response ||
+              "I received your credit policy query but couldn't generate a response."
+            : `Credit policy analysis error: ${agentResponse.error || "Unknown error occurred"}`;
+
+          assistantMessage = {
+            id: (Date.now() + 1).toString(),
+            role: "assistant",
+            content: responseContent,
+            timestamp: new Date(),
+            language: selectedLanguage,
+            metadata: {
+              agent_type: "credit-policy-market",
+              success: agentResponse.success,
+              response: agentResponse.response,
+              error: agentResponse.error,
+            },
+          };
         } else if (
           agentMode &&
           currentSession?.agent?.id === "pest-prediction"
@@ -393,118 +448,248 @@ export default function AgriculturalAIChatbot() {
           // Use specialized crop disease detection agent endpoint
           console.log("Using crop disease detection agent");
 
-          // Check if there's an image file uploaded
-          if (!files || files.length === 0) {
-            // If no image, provide instructions
-            assistantMessage = {
-              id: (Date.now() + 1).toString(),
-              role: "assistant",
-              content:
-                "Please upload an image of the crop/plant to analyze for disease detection. I need to see the plant to provide accurate disease diagnosis.",
-              timestamp: new Date(),
-              language: selectedLanguage,
-              metadata: {
-                agent_type: "crop-health",
-                success: false,
-                error: "No image provided",
-              },
-            };
-          } else {
-            const agentResponse =
-              await agriculturalAPI.getCropDiseaseDetectionAgent({
-                imageFile: files[0],
-                query: content,
-              });
+          // The new API supports both image-based and text-based analysis
+          const agentResponse =
+            await agriculturalAPI.getCropDiseaseDetectionAgent({
+              imageFile: files?.[0], // Optional - can be undefined
+              query: content,
+            });
 
-            // Format the response nicely
-            let formattedResponse = agentResponse.success
+          // Format the response nicely
+          let formattedResponse = agentResponse.success
+            ? files && files.length > 0
               ? "Based on the image analysis, here's my crop health assessment:\n\n"
-              : `Crop disease detection error: ${agentResponse.error || "Unknown error occurred"}\n\n`;
+              : "Based on your description, here's my crop health analysis:\n\n"
+            : `Crop disease detection error: ${agentResponse.error || "Unknown error occurred"}\n\n`;
 
-            if (agentResponse.success && agentResponse.diseases) {
-              formattedResponse += `🦠 **Detected Diseases:**\n`;
-              agentResponse.diseases.forEach((disease, index) => {
-                const probability =
-                  agentResponse.disease_probabilities?.[index];
-                formattedResponse += `• ${disease}${probability ? ` (${(probability * 100).toFixed(1)}% confidence)` : ""}\n`;
+          if (agentResponse.success && agentResponse.diseases) {
+            formattedResponse += `🦠 **Detected Diseases:**\n`;
+            agentResponse.diseases.forEach((disease, index) => {
+              const probability = agentResponse.disease_probabilities?.[index];
+              formattedResponse += `• ${disease}${probability ? ` (${(probability * 100).toFixed(1)}% confidence)` : ""}\n`;
+            });
+            formattedResponse += `\n`;
+
+            if (agentResponse.symptoms && agentResponse.symptoms.length > 0) {
+              formattedResponse += `🔍 **Symptoms:**\n`;
+              agentResponse.symptoms.forEach((symptom) => {
+                formattedResponse += `• ${symptom}\n`;
               });
               formattedResponse += `\n`;
-
-              if (agentResponse.symptoms && agentResponse.symptoms.length > 0) {
-                formattedResponse += `🔍 **Symptoms:**\n`;
-                agentResponse.symptoms.forEach((symptom) => {
-                  formattedResponse += `• ${symptom}\n`;
-                });
-                formattedResponse += `\n`;
-              }
-
-              if (
-                agentResponse.Treatments &&
-                agentResponse.Treatments.length > 0
-              ) {
-                formattedResponse += `💊 **Treatments:**\n`;
-                agentResponse.Treatments.forEach((treatment) => {
-                  formattedResponse += `• ${treatment}\n`;
-                });
-                formattedResponse += `\n`;
-              }
-
-              if (
-                agentResponse.prevention_tips &&
-                agentResponse.prevention_tips.length > 0
-              ) {
-                formattedResponse += `🛡️ **Prevention Tips:**\n`;
-                agentResponse.prevention_tips.forEach((tip) => {
-                  formattedResponse += `• ${tip}\n`;
-                });
-                formattedResponse += `\n`;
-              }
             }
 
-            assistantMessage = {
-              id: (Date.now() + 1).toString(),
-              role: "assistant",
-              content: formattedResponse,
-              timestamp: new Date(),
-              language: selectedLanguage,
-              metadata: {
-                agent_type: "crop-health",
-                success: agentResponse.success,
-                diseases: agentResponse.diseases,
-                disease_probabilities: agentResponse.disease_probabilities,
-                symptoms: agentResponse.symptoms,
-                treatments: agentResponse.Treatments,
-                prevention_tips: agentResponse.prevention_tips,
-                error: agentResponse.error,
-              },
-            };
+            if (
+              agentResponse.Treatments &&
+              agentResponse.Treatments.length > 0
+            ) {
+              formattedResponse += `💊 **Treatments:**\n`;
+              agentResponse.Treatments.forEach((treatment) => {
+                formattedResponse += `• ${treatment}\n`;
+              });
+              formattedResponse += `\n`;
+            }
+
+            if (
+              agentResponse.prevention_tips &&
+              agentResponse.prevention_tips.length > 0
+            ) {
+              formattedResponse += `🛡️ **Prevention Tips:**\n`;
+              agentResponse.prevention_tips.forEach((tip) => {
+                formattedResponse += `• ${tip}\n`;
+              });
+              formattedResponse += `\n`;
+            }
           }
-        } else {
-          // Use generic agricultural API for other agents or tool mode
-          console.log(
-            "Using generic agricultural API ",
-            agentMode,
-            currentSession?.agent?.id
-          );
-          const apiResponse = await agriculturalAPI.sendQuery({
-            query: content,
-            language: selectedLanguage,
-            context: {
-              agent_type: currentSession?.agent?.id,
-              previous_messages: previousMessages,
-            },
-          });
 
           assistantMessage = {
             id: (Date.now() + 1).toString(),
             role: "assistant",
-            content: apiResponse.response,
+            content: formattedResponse,
             timestamp: new Date(),
             language: selectedLanguage,
             metadata: {
-              confidence: apiResponse.confidence,
-              sources: apiResponse.sources,
-              agent_type: apiResponse.agent_type,
+              agent_type: "crop-health",
+              success: agentResponse.success,
+              diseases: agentResponse.diseases,
+              disease_probabilities: agentResponse.disease_probabilities,
+              symptoms: agentResponse.symptoms,
+              treatments: agentResponse.Treatments,
+              prevention_tips: agentResponse.prevention_tips,
+              error: agentResponse.error,
+              has_image: !!(files && files.length > 0),
+            },
+          };
+        } else if (agentMode && currentSession?.agent?.id === "market-prices") {
+          // Use specialized market price agent endpoint
+          console.log("Using market price agent");
+          const agentResponse = await agriculturalAPI.getMarketPriceAgent({
+            query: content,
+          });
+
+          // Use the response from the agent
+          const responseContent = agentResponse.success
+            ? agentResponse.response ||
+              "I received your market price query but couldn't generate a response."
+            : `Market price analysis error: ${agentResponse.error || "Unknown error occurred"}`;
+
+          assistantMessage = {
+            id: (Date.now() + 1).toString(),
+            role: "assistant",
+            content: responseContent,
+            timestamp: new Date(),
+            language: selectedLanguage,
+            metadata: {
+              agent_type: "market-prices",
+              success: agentResponse.success,
+              error: agentResponse.error,
+            },
+          };
+        } else if (
+          agentMode &&
+          (currentSession?.agent?.id === "risk-management" ||
+            currentSession?.agent?.id === "price-forecasting")
+        ) {
+          // Use specialized risk management agent endpoint
+          console.log("Using risk management agent");
+          const agentResponse = await agriculturalAPI.getRiskManagementAgent({
+            query: content,
+          });
+
+          // Format the response nicely
+          let formattedResponse = agentResponse.success
+            ? "Based on my analysis, here's your agricultural risk assessment:\n\n"
+            : `Risk analysis error: ${agentResponse.error || "Unknown error occurred"}\n\n`;
+
+          if (agentResponse.success) {
+            if (agentResponse.risk_analysis) {
+              formattedResponse += `📊 **Risk Analysis:**\n`;
+              if (typeof agentResponse.risk_analysis === "string") {
+                formattedResponse += `${agentResponse.risk_analysis}\n\n`;
+              } else {
+                formattedResponse += `${JSON.stringify(agentResponse.risk_analysis, null, 2)}\n\n`;
+              }
+            }
+
+            if (
+              agentResponse.recommendations &&
+              agentResponse.recommendations.length > 0
+            ) {
+              formattedResponse += `💡 **Recommendations:**\n`;
+              agentResponse.recommendations.forEach((recommendation) => {
+                formattedResponse += `• ${recommendation}\n`;
+              });
+              formattedResponse += `\n`;
+            }
+
+            if (agentResponse.timestamp) {
+              formattedResponse += `🕒 **Analysis Time:** ${agentResponse.timestamp}\n`;
+            }
+          }
+
+          assistantMessage = {
+            id: (Date.now() + 1).toString(),
+            role: "assistant",
+            content: formattedResponse,
+            timestamp: new Date(),
+            language: selectedLanguage,
+            metadata: {
+              agent_type: "risk-management",
+              success: agentResponse.success,
+              risk_analysis: agentResponse.risk_analysis,
+              recommendations: agentResponse.recommendations,
+              timestamp: agentResponse.timestamp,
+              error: agentResponse.error,
+            },
+          };
+        } else if (agentMode && currentSession?.agent?.id === "deep-research") {
+          // Use specialized workflow agent for deep research
+          const mode = toolsEnabled ? "tooling" : "rag";
+          console.log(
+            `Using workflow agent for deep research in ${mode} mode (tools ${toolsEnabled ? "enabled" : "disabled"})`
+          );
+          const agentResponse = await agriculturalAPI.getWorkflowAgent({
+            query: content,
+            mode: mode,
+            image: files?.[0],
+          });
+
+          let formattedResponse = agentResponse.success
+            ? "Here's what I found through deep research:\n\n"
+            : `Research error: ${agentResponse.error || "Unknown error occurred"}\n\n`;
+
+          if (agentResponse.success && agentResponse.response) {
+            formattedResponse += agentResponse.response;
+
+            if (agentResponse.answer_quality_grade) {
+              formattedResponse += `\n\n📊 **Answer Quality Score:** ${JSON.stringify(agentResponse.answer_quality_grade)}`;
+            }
+
+            if (agentResponse.processing_time) {
+              formattedResponse += `\n⏱️ **Processing Time:** ${agentResponse.processing_time.toFixed(2)}s`;
+            }
+          }
+
+          assistantMessage = {
+            id: (Date.now() + 1).toString(),
+            role: "assistant",
+            content: formattedResponse,
+            timestamp: new Date(),
+            language: selectedLanguage,
+            metadata: {
+              agent_type: "deep-research",
+              success: agentResponse.success,
+              answer_quality_grade: agentResponse.answer_quality_grade,
+              processing_time: agentResponse.processing_time,
+              mode: "tooling",
+              error: agentResponse.error,
+            },
+          };
+        } else {
+          // Use workflow agent for generic queries and multilingual support
+          console.log(
+            "Using workflow agent for generic/multilingual support ",
+            agentMode,
+            currentSession?.agent?.id
+          );
+
+          // Check if this is a translation request or multilingual query
+          const isTranslationQuery =
+            content.toLowerCase().includes("translate") ||
+            content.toLowerCase().includes("translation") ||
+            selectedLanguage !== "en";
+
+          // Use RAG mode when tools are disabled, or for translation queries
+          const shouldUseRAG = !toolsEnabled || isTranslationQuery;
+          const mode = shouldUseRAG ? "rag" : "tooling";
+
+          console.log(
+            `Using workflow agent in ${mode} mode (tools ${toolsEnabled ? "enabled" : "disabled"}, translation query: ${isTranslationQuery})`
+          );
+
+          const agentResponse = await agriculturalAPI.getWorkflowAgent({
+            query: content,
+            mode: mode,
+            image: files?.[0],
+          });
+
+          const responseContent = agentResponse.success
+            ? agentResponse.response ||
+              "I received your query but couldn't generate a response."
+            : `Error: ${agentResponse.error || "Unknown error occurred"}`;
+
+          assistantMessage = {
+            id: (Date.now() + 1).toString(),
+            role: "assistant",
+            content: responseContent,
+            timestamp: new Date(),
+            language: selectedLanguage,
+            metadata: {
+              agent_type: currentSession?.agent?.id || "generic",
+              success: agentResponse.success,
+              answer_quality_grade: agentResponse.answer_quality_grade,
+              processing_time: agentResponse.processing_time,
+              mode: isTranslationQuery ? "rag" : "tooling",
+              error: agentResponse.error,
             },
           };
         }
@@ -570,6 +755,8 @@ export default function AgriculturalAIChatbot() {
       "crop-health": "Describe the crop health issue you're observing",
       "pest-prediction": "What pest information do you need?",
       "market-prices": "What market price information are you looking for?",
+      "credit-loan-policy":
+        "What agricultural finance or market intelligence do you need?",
     };
     return presets[agentId] || "";
   };
@@ -720,6 +907,7 @@ export default function AgriculturalAIChatbot() {
                       : "Message PRAGATI..."
                   }
                   switchMode={true}
+                  onToolsEnabledChange={handleToolsEnabledChange}
                 />
               </>
             )}

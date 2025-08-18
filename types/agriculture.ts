@@ -30,6 +30,10 @@ export interface ChatMessage {
     crop_names?: string[];
     confidence_scores?: number[];
     justifications?: string[];
+    // Crop yield agent specific data
+    result?: string;
+    // Credit policy market agent specific data
+    response?: string;
     // Weather forecast agent specific data
     success?: boolean;
     error?: string;
@@ -43,6 +47,15 @@ export interface ChatMessage {
     symptoms?: string[];
     treatments?: string[];
     prevention_tips?: string[];
+    has_image?: boolean;
+    // Risk management agent specific data
+    risk_analysis?: any;
+    recommendations?: string[];
+    timestamp?: string;
+    // Workflow agent specific data
+    answer_quality_grade?: any;
+    processing_time?: number;
+    mode?: "rag" | "tooling";
   };
   error?: boolean;
 }
