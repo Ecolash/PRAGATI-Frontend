@@ -3,6 +3,7 @@
 A modern Next.js front-end application for Agricultural AI solutions, including chat, crop recommendations, disease prediction, and more.
 
 ## Table of Contents
+
 - [Prerequisites](#prerequisites)
 - [Getting Started](#getting-started)
 - [Environment Variables](#environment-variables)
@@ -13,19 +14,23 @@ A modern Next.js front-end application for Agricultural AI solutions, including 
 - [License](#license)
 
 ## Prerequisites
+
 - [Node.js](https://nodejs.org/) v18 or higher
 - [pnpm](https://pnpm.io/) package manager (optional but recommended)
 - A PostgreSQL-compatible database (Neon, Supabase, or local Postgres)
 - [Git](https://git-scm.com/) for version control
 
 ## Getting Started
+
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/Ecolash/Agricultural-AI-Frontend.git
    cd Agricultural-AI-Frontend
    ```
 
 2. Install dependencies:
+
    ```bash
    pnpm install
    ```
@@ -33,12 +38,17 @@ A modern Next.js front-end application for Agricultural AI solutions, including 
 3. Create a `.env` file in the project root based on the example below.
 
 ## Environment Variables
+
 Create a `.env` file with the following variables:
+
 ```ini
 # .env.example
 DATABASE_URL="postgresql://<USER>:<PASSWORD>@<HOST>:<PORT>/<DATABASE>?sslmode=require&channel_binding=require"
 NEXTAUTH_SECRET="your_nextauth_secret"
+NEXTAUTH_URL="https://agricultural-ai-frontend.vercel.app/"
+NEXT_PUBLIC_API_URL="http://localhost:8000"
 ```
+
 - **DATABASE_URL**: Connection string for your PostgreSQL or Neon database.
 - **NEXTAUTH_SECRET**: A random string used to encrypt NextAuth session tokens. You can generate one with:
   ```bash
@@ -46,14 +56,17 @@ NEXTAUTH_SECRET="your_nextauth_secret"
   ```
 
 ## Prisma Setup
+
 Prisma ORM is used for database schema migrations and client generation.
 
 1. Generate Prisma client (runs automatically after install):
+
    ```bash
    pnpm prisma generate
    ```
 
 2. Apply migrations to your database:
+
    ```bash
    pnpm prisma migrate dev --name init
    ```
@@ -64,6 +77,7 @@ Prisma ORM is used for database schema migrations and client generation.
    ```
 
 ## Available Scripts
+
 In the project directory, you can run:
 
 - `pnpm dev` or `pnpm run dev:frontend`  
@@ -85,6 +99,7 @@ In the project directory, you can run:
   Helpful scripts for local development (see `scripts/dev-setup.sh help`).
 
 ## Project Structure
+
 ```
 ├── app/                     # Next.js app directory (app router)
 ├── components/              # Reusable React components
@@ -99,6 +114,7 @@ In the project directory, you can run:
 ```
 
 ## Contributing
+
 Contributions are welcome! Please open an issue or submit a pull request.
 
 1. Fork the repository
@@ -108,4 +124,5 @@ Contributions are welcome! Please open an issue or submit a pull request.
 5. Open a Pull Request
 
 ## License
+
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
