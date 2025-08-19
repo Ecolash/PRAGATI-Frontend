@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 "use client";
 
 import type React from "react";
@@ -365,15 +364,15 @@ export function CropDiseaseDetection() {
                                           {getSeverityLabel(probability)} •{" "}
                                           <span
                                             className={getConfidenceColor(
-                                              probability
+                                              probability,
                                             )}
                                           >
-                                            {probability.toFixed(1)}%
+                                            {(probability * 100).toFixed(1)}%
                                           </span>
                                         </span>
                                       </li>
                                     );
-                                  }
+                                  },
                                 )}
                               </ul>
                             </AccordionContent>
@@ -392,7 +391,7 @@ export function CropDiseaseDetection() {
                                 {analysisResult.symptoms.map(
                                   (symptom, index) => (
                                     <li key={index}>{symptom}</li>
-                                  )
+                                  ),
                                 )}
                               </ul>
                             </AccordionContent>
@@ -411,7 +410,7 @@ export function CropDiseaseDetection() {
                                 {analysisResult.treatments.map(
                                   (treatment, index) => (
                                     <li key={index}>{treatment}</li>
-                                  )
+                                  ),
                                 )}
                               </ul>
                             </AccordionContent>
@@ -428,7 +427,7 @@ export function CropDiseaseDetection() {
                                 {analysisResult.prevention_tips.map(
                                   (tip, index) => (
                                     <li key={index}>{tip}</li>
-                                  )
+                                  ),
                                 )}
                               </ul>
                             </AccordionContent>
