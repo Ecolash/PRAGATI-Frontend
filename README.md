@@ -1,36 +1,73 @@
-# Agricultural AI Frontend
+<div align="center">
+  <img src="assets/logo.png" alt="PRAGATI Logo" width="180" height="180" />
+  
+  <h1>Agricultural AI Frontend</h1>
+  <h3>PRAGATI: Precision Retrieval & AI for Generative Agricultural Technology & Insights</h3>
+</div>
+
+---
+
+PRAGATI is a pioneering RAG-powered Multi-Agent Orchestrator System tailored for agricultural domain knowledge. Our vision is to empower the agricultural sector with:
+
+- **Specialized AI Agents**: Deliver precise, timely, and context-aware recommendations for crop selection, irrigation, fertilizer use, pest detection etc.
+- **Query Complexity Assessment**: Optimizes retrieval and generation, ensuring the right expertise is applied to each query.
+- **Multi-Agent Orchestration**: Coordinates specialized agents for comprehensive, expert-backed answers.
+- **Multi-Lingual & Multi-Modal Support**: Accessible via text, image, and voice inputs, making PRAGATI an AI truly "For the Farmers".
+- **Deep Research Pipelines**: Enhance coverage and depth of recommendations.
+- **Human-in-the-Loop (HITL) Validation**: Ensures factual accuracy and reliable decision support for farmers and stakeholders.
+- **Retrieval-Augmented Generation (RAG) Pipeline**: Integrates semantic search with domain-specific knowledge base retrieval, ensuring all AI-generated responses are grounded in verified agricultural data.
+
+> PRAGATI is accurate, fast, and reliable—driving progress and growth in agriculture, just as its name means!
+
+---
 
 A modern Next.js front-end application for Agricultural AI solutions, including chat, crop recommendations, disease prediction, and more.
 
+
+## Features
+
+The dashboard provides the following AI-powered features and tools:
+
+- **AI Specialists Tab**
+  - Crop Yield Prediction
+  - Crop Health Analysis & Disease Prediction
+  - Pest Control & Prediction
+  - Crop Recommendations (Soil-based)
+  - Fertilizer Guide
+  - Irrigation Planning
+  - Weather Advisory
+  - Market Prices (Real-time)
+  - Credit Policy & Market Intelligence
+  - Risk Management
+  - Agriculture News & Updates
+
+- **Chat History Tab**
+  - Access and revisit all your previous chat sessions with AI agents.
+
+- **QR Scanner**
+  - Scan QR codes for quick access to agri-data, resources, or field records.
+
+- **Profile & Sign Out**
+  - Manage your user profile and securely sign out.
+
+All features are accessible via a sidebar for seamless navigation between AI agents, chat history, and tools.
+
 ## Table of Contents
 
-- [Prerequisites](#prerequisites)
-- [Getting Started](#getting-started)
-- [Environment Variables](#environment-variables)
-- [Prisma Setup](#prisma-setup)
-- [Available Scripts](#available-scripts)
-- [Project Structure](#project-structure)
-- [Contributing](#contributing)
-- [License](#license)
-
 ## Prerequisites
-
 - [Node.js](https://nodejs.org/) v18 or higher
 - [pnpm](https://pnpm.io/) package manager (optional but recommended)
 - A PostgreSQL-compatible database (Neon, Supabase, or local Postgres)
 - [Git](https://git-scm.com/) for version control
 
 ## Getting Started
-
 1. Clone the repository:
-
    ```bash
    git clone https://github.com/Ecolash/Agricultural-AI-Frontend.git
    cd Agricultural-AI-Frontend
    ```
 
 2. Install dependencies:
-
    ```bash
    pnpm install
    ```
@@ -38,35 +75,25 @@ A modern Next.js front-end application for Agricultural AI solutions, including 
 3. Create a `.env` file in the project root based on the example below.
 
 ## Environment Variables
-
 Create a `.env` file with the following variables:
+In the project root:
 
-```ini
-# .env.example
-DATABASE_URL="postgresql://<USER>:<PASSWORD>@<HOST>:<PORT>/<DATABASE>?sslmode=require&channel_binding=require"
-NEXTAUTH_SECRET="your_nextauth_secret"
-NEXTAUTH_URL="https://agricultural-ai-frontend.vercel.app/"
-NEXT_PUBLIC_API_URL="http://localhost:8000"
+```env
+DATABASE_URL=""           # PostgreSQL connection string
+NEXTAUTH_SECRET=""        # Secret key for NextAuth.js
+NEXTAUTH_URL=""           # Deployed frontend URL
+NEXT_PUBLIC_API_URL=""    # Public API endpoint for the backend
 ```
 
-- **DATABASE_URL**: Connection string for your PostgreSQL or Neon database.
-- **NEXTAUTH_SECRET**: A random string used to encrypt NextAuth session tokens. You can generate one with:
-  ```bash
-  openssl rand -base64 32
-  ```
-
 ## Prisma Setup
-
 Prisma ORM is used for database schema migrations and client generation.
 
 1. Generate Prisma client (runs automatically after install):
-
    ```bash
    pnpm prisma generate
    ```
 
 2. Apply migrations to your database:
-
    ```bash
    pnpm prisma migrate dev --name init
    ```
@@ -77,7 +104,6 @@ Prisma ORM is used for database schema migrations and client generation.
    ```
 
 ## Available Scripts
-
 In the project directory, you can run:
 
 - `pnpm dev` or `pnpm run dev:frontend`  
@@ -99,22 +125,40 @@ In the project directory, you can run:
   Helpful scripts for local development (see `scripts/dev-setup.sh help`).
 
 ## Project Structure
-
 ```
-├── app/                     # Next.js app directory (app router)
-├── components/              # Reusable React components
-├── data/                    # Static data and agent configs
-├── lib/                     # API wrappers, utilities, and services
-├── prisma/                  # Prisma schema and migrations
-├── public/                  # Static assets
-├── scripts/                 # Utility scripts for setup
-├── styles/                  # Global styles
-├── types/                   # TypeScript type definitions
-└── README.md                # Project documentation
+├── app/                        # Next.js app directory (routing, pages, API routes)
+│   ├── api/                    # API route handlers (auth, chat-history, etc.)
+│   ├── dashboard/              # Dashboard UI and subpages
+│   ├── qr-scanner/             # QR scanner feature pages
+│   ├── signin/, signup/        # Auth pages
+│   └── ...                     # Other feature pages and layouts
+│
+├── components/                 # Reusable React components
+│   ├── agent-interfaces/       # Specialized agent UI interfaces
+│   ├── lib/                    # Component-specific utilities
+│   ├── types/                  # Component-specific types
+│   └── ui/                     # UI primitives (buttons, dialogs, etc.)
+│
+├── data/                       # Static data, language lists, agent configs
+├── docs/                       # Project and API documentation
+├── hooks/                      # Custom React hooks
+├── lib/                        # API wrappers, utilities, and services
+│   └── actions/                # Server actions and helpers
+├── prisma/                     # Prisma schema and migrations
+│   └── migrations/             # Database migration files
+├── public/                     # Static assets (images, icons, etc.)
+├── scripts/                    # Utility scripts for setup and development
+├── styles/                     # Global and component styles
+├── types/                      # Global TypeScript type definitions
+├── assets/                     # Project assets (logo, images)
+├── .env                        # Environment variables
+├── package.json                # Project metadata and scripts
+├── tsconfig.json               # TypeScript configuration
+├── README.md                   # Project documentation
+└── ...                         # Other config and dotfiles
 ```
 
 ## Contributing
-
 Contributions are welcome! Please open an issue or submit a pull request.
 
 1. Fork the repository
@@ -124,5 +168,4 @@ Contributions are welcome! Please open an issue or submit a pull request.
 5. Open a Pull Request
 
 ## License
-
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
