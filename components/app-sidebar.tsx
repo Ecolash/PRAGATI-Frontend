@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 "use client";
 
 import { useState } from "react";
@@ -38,7 +39,7 @@ export function AppSidebar({
   onSelectAgentAction,
 }: StreamlinedSidebarProps) {
   const [activeSection, setActiveSection] = useState<"agents" | "history">(
-    "agents",
+    "agents"
   );
   const router = useRouter();
 
@@ -50,7 +51,7 @@ export function AppSidebar({
       acc[agent.category].push(agent);
       return acc;
     },
-    {} as Record<string, typeof agricultureAgents>,
+    {} as Record<string, typeof agricultureAgents>
   );
 
   return (
@@ -324,7 +325,10 @@ export function AppSidebar({
       <SidebarFooter className="p-4 border-t border-gray-100">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton className="gap-3 hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700">
+            <SidebarMenuButton
+              className="gap-3 hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700"
+              onClick={() => router.push("/profile")}
+            >
               <User className="h-4 w-4 text-emerald-500" />
               <span>Profile</span>
             </SidebarMenuButton>

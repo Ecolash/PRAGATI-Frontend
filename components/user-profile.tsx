@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,22 +13,42 @@ import {
   AtSign,
   Sparkles,
 } from "lucide-react";
+import { getUser } from "@/lib/actions/getUser";
 
 export function ProfileView() {
   const [showPassword, setShowPassword] = useState(false);
+  const [userData, setUserData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Mock user data
-  const userData = {
-    fullName: "Rajesh Kumar Sharma",
-    username: "rajesh.farmer2024",
-    aadharNumber: "1234 5678 9012",
-    password: "SecurePass123!",
-  };
+  useEffect(() => {
+    async function fetchUser() {
+      const res = await getUser();
+      setUserData(res.user);
+      setLoading(false);
+    }
+    fetchUser();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-green-700">Loading profile...</p>
+      </div>
+    );
+  }
+
+  if (!userData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-red-600">No user found. Please log in.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-green-100 p-4 md:p-8">
       {/* Header with Pragati Branding */}
-      <div className="max-w-4xl mx-auto mb-8">
+      <div className="max-w-7xl mx-auto mb-8 px-4 md:px-8">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 mb-4">
             <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center shadow-lg">
@@ -113,7 +133,7 @@ export function ProfileView() {
                     Password
                   </p>
                   <p className="text-lg font-semibold text-green-800 font-mono">
-                    {showPassword ? userData.password : "••••••••••••"}
+                    {showPassword ? "••••••••••••" : "••••••••••••"}
                   </p>
                 </div>
                 <Button
@@ -132,9 +152,11 @@ export function ProfileView() {
             </div>
 
             <div className="flex justify-center pt-6">
-              <Button className="px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white shadow-lg font-semibold">
-                View Dashboard
-              </Button>
+              <a href="/dashboard">
+                <Button className="px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white shadow-lg font-semibold">
+                  View Dashboard
+                </Button>
+              </a>
             </div>
           </CardContent>
         </Card>
