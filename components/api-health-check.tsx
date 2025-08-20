@@ -45,7 +45,7 @@ export function APIHealthCheck() {
       <TooltipTrigger asChild>
         <div
           onClick={checkHealth}
-          className="flex items-center gap-2 cursor-pointer bg-slate-200 px-1 py-1 rounded-2xl"
+          className="flex items-center gap-2 cursor-pointer bg-slate-200 px-1 lg:px-2 py-1 rounded-2xl"
         >
           <div
             className={`relative h-3 w-3 rounded-full ${
