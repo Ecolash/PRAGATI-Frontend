@@ -9,7 +9,6 @@ import {
   Droplets,
   Newspaper,
   Shield,
-  Search,
   Landmark,
 } from "lucide-react";
 import { AgricultureAgent } from "@/types/agriculture";
@@ -17,17 +16,17 @@ import { AgricultureAgent } from "@/types/agriculture";
 export const agricultureAgents: AgricultureAgent[] = [
   {
     id: "crop-yield",
-    name: "Crop Yield Prediction",
-    description: "Predict crop yields based on various factors",
+    name: "Crop Yield Calculation",
+    description: "Estimate crop yields",
     icon: <TrendingUp className="h-4 w-4" />,
-    category: "prediction",
+    category: "analysis",
     color: "text-pink-600",
     mode: "both",
   },
   {
     id: "weather-advisory",
     name: "Weather Advisory",
-    description: "Weather insights and climate recommendations",
+    description: "Weather insights & climate updates",
     icon: <Cloud className="h-4 w-4" />,
     category: "advisory",
     color: "text-sky-600",
@@ -36,7 +35,7 @@ export const agricultureAgents: AgricultureAgent[] = [
   {
     id: "crop-recommendations",
     name: "Crop Recommendations",
-    description: "Crop suggestions based on soil tests",
+    description: "Crop suggestions via soil tests",
     icon: <Sprout className="h-4 w-4" />,
     category: "advisory",
     color: "text-green-600",
@@ -45,7 +44,7 @@ export const agricultureAgents: AgricultureAgent[] = [
   {
     id: "crop-health",
     name: "Crop Health Analysis",
-    description: "Analyze crop health and predict diseases",
+    description: "Predict crop diseases",
     icon: <Microscope className="h-4 w-4" />,
     category: "prediction",
     color: "text-purple-600",
@@ -72,7 +71,7 @@ export const agricultureAgents: AgricultureAgent[] = [
   {
     id: "pest-prediction",
     name: "Pest Control",
-    description: "Predict and prevent pest infestations",
+    description: "Predict & prevent pest infestations",
     icon: <Bug className="h-4 w-4" />,
     category: "prediction",
     color: "text-red-600",
@@ -99,8 +98,7 @@ export const agricultureAgents: AgricultureAgent[] = [
   {
     id: "credit-loan-policy",
     name: "Credit Policy & Market Intelligence",
-    description:
-      "Agricultural finance expert providing market trends, credit policy analysis, risk assessment, and strategic financial recommendations",
+    description: "Analyse market trends & credit policy",
     icon: <Landmark className="h-4 w-4" />,
     category: "market",
     color: "text-indigo-600",
@@ -109,7 +107,7 @@ export const agricultureAgents: AgricultureAgent[] = [
   {
     id: "risk-management",
     name: "Risk Management",
-    description: "Identify and mitigate farming risks and uncertainties",
+    description: "Identify & mitigate farming risks",
     icon: <Shield className="h-4 w-4" />,
     category: "market",
     color: "text-rose-600",
