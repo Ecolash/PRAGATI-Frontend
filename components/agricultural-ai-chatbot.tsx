@@ -24,6 +24,7 @@ import { Bot, Wrench } from "lucide-react";
 import { WeatherForecast } from "@/components/weather-forecast";
 import { CropYieldPredictor } from "@/components/crop-yield-predictor";
 import { AgriculturalNewsFeed } from "@/components/agricultural-news-feed";
+import { APIHealthCheck } from "@/components/api-health-check";
 
 export default function AgriculturalAIChatbot() {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -854,13 +855,16 @@ export default function AgriculturalAIChatbot() {
               orientation="vertical"
               className="mr-2 h-4 bg-gray-300"
             />
+
+            {/* Left Section: Saving + Agent info */}
             <div className="flex items-center gap-2">
               {isSaving && (
                 <div className="flex items-center gap-1 text-xs text-gray-500">
                   <div className="h-3 w-3 animate-spin rounded-full border border-emerald-500 border-t-transparent"></div>
-                  Saving...
+                  <span className="hidden sm:inline">Saving...</span>
                 </div>
               )}
+
               {currentSession?.agent ? (
                 <>
                   <div className={`${currentSession.agent.color}`}>
@@ -881,24 +885,33 @@ export default function AgriculturalAIChatbot() {
                 </>
               )}
             </div>
-            {currentSession?.agent && currentSession.agent.mode === "both" && (
-              <div className="flex items-center gap-2 ml-auto">
-                <span className="hidden sm:inline text-sm text-gray-600">
-                  Tool
-                </span>
-                <Wrench className="sm:hidden w-4 h-4 text-gray-600" />
-                <Switch
-                  checked={agentMode}
-                  onCheckedChange={setAgentMode}
-                  className="data-[state=checked]:bg-emerald-600"
-                />
-                <span className="hidden sm:inline text-sm text-gray-600">
-                  Agent
-                </span>
-                <Bot className="sm:hidden w-4 h-4 text-gray-600" />
-              </div>
-            )}
+
+            {/* Right Section: Toggles + API Health */}
+            <div className="ml-auto flex items-center gap-3">
+              {currentSession?.agent &&
+                currentSession.agent.mode === "both" && (
+                  <div className="flex items-center gap-2">
+                    <span className="hidden sm:inline text-sm text-gray-600">
+                      Tool
+                    </span>
+                    <Wrench className="sm:hidden w-4 h-4 text-gray-600" />
+                    <Switch
+                      checked={agentMode}
+                      onCheckedChange={setAgentMode}
+                      className="data-[state=checked]:bg-emerald-600"
+                    />
+                    <span className="hidden sm:inline text-sm text-gray-600">
+                      Agent
+                    </span>
+                    <Bot className="sm:hidden w-4 h-4 text-gray-600" />
+                  </div>
+                )}
+
+              {/* Compact API Health Check */}
+              <APIHealthCheck />
+            </div>
           </header>
+
           <div className="flex flex-col flex-1 min-h-0">
             {renderAgentInterface() || (
               <>

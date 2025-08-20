@@ -2,34 +2,33 @@
 
 import { useEffect, useState } from "react";
 import { agriculturalAPI } from "@/lib/agricultural-api";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface APIStatus {
   isOnline: boolean;
-  message: string;
   lastChecked: Date;
 }
 
 export function APIHealthCheck() {
   const [status, setStatus] = useState<APIStatus>({
     isOnline: false,
-    message: "Checking...",
     lastChecked: new Date(),
   });
 
   const checkHealth = async () => {
     try {
-      const response = await agriculturalAPI.healthCheck();
+      await agriculturalAPI.healthCheck();
       setStatus({
         isOnline: true,
-        message: `${response.service} is healthy`,
         lastChecked: new Date(),
       });
     } catch {
       setStatus({
         isOnline: false,
-        message: "Agricultural API is offline",
         lastChecked: new Date(),
       });
     }
@@ -37,24 +36,46 @@ export function APIHealthCheck() {
 
   useEffect(() => {
     checkHealth();
-    // Check every 30 seconds
     const interval = setInterval(checkHealth, 30000);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="p-4">
-      <Alert>
-        <AlertDescription className="flex items-center gap-2">
-          <Badge variant={status.isOnline ? "default" : "destructive"}>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div
+          onClick={checkHealth}
+          className="flex items-center gap-2 cursor-pointer bg-slate-200 px-2 py-1 rounded-2xl"
+        >
+          <div
+            className={`relative h-3 w-3 rounded-full ${
+              status.isOnline ? "bg-emerald-500" : "bg-red-500"
+            }`}
+          >
+            {/* Pulse ring */}
+            <span
+              className={`absolute inset-0 rounded-full opacity-75 animate-ping ${
+                status.isOnline ? "bg-emerald-400" : "bg-red-400"
+              }`}
+            />
+          </div>
+
+          {/* Show text label only on larger devices */}
+          <span
+            className={`hidden sm:inline text-sm font-medium ${
+              status.isOnline ? "text-emerald-600" : "text-red-600"
+            }`}
+          >
             {status.isOnline ? "Online" : "Offline"}
-          </Badge>
-          <span>{status.message}</span>
-          <span className="text-xs text-muted-foreground ml-auto">
-            Last checked: {status.lastChecked.toLocaleTimeString()}
           </span>
-        </AlertDescription>
-      </Alert>
-    </div>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>
+          Backend is {status.isOnline ? "online" : "offline"} <br />
+          Last checked: {status.lastChecked.toLocaleTimeString()}
+        </p>
+      </TooltipContent>
+    </Tooltip>
   );
 }
