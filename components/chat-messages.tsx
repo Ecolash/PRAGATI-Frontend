@@ -1,7 +1,15 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { Bot, User, FileText, ImageIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  Bot,
+  User,
+  FileText,
+  ImageIcon,
+  ChevronUp,
+  ChevronDown,
+  Info,
+} from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { MessageTranslator } from "./message-translator";
@@ -42,10 +50,25 @@ export function ChatMessages({
   onSelectAgentAction,
 }: ChatMessagesProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [showEmbeddingNotice, setShowEmbeddingNotice] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
+    if (isLoading) {
+      timer = setTimeout(() => setShowEmbeddingNotice(true), 20000); // 20s delay
+    } else {
+      setShowEmbeddingNotice(false);
+      setShowDetails(false);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [isLoading]);
 
   const handleSpeak = (text: string, languageCode: string) => {
     const language = supportedLanguages.find((l) => l.code === languageCode);
@@ -254,6 +277,51 @@ export function ChatMessages({
                     style={{ animationDelay: "0.2s" }}
                   />
                 </div>
+                {showEmbeddingNotice && (
+                  <div className="mt-3 text-xs sm:text-sm text-gray-700">
+                    {/* Compact notice */}
+                    <div className="flex items-center justify-between bg-green-50 border border-green-200 px-3 py-2 rounded-xl shadow-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="relative">
+                          <Info className="h-4 w-4 text-green-600 animate-pulse" />
+                          <span className="absolute inset-0 rounded-full animate-ping bg-green-400 opacity-30"></span>
+                        </div>
+                        <span className="font-medium animate-pulse bg-gradient-to-r from-green-600 to-green-400 bg-clip-text text-transparent">
+                          Generating embeddings…
+                        </span>
+                      </div>
+
+                      {/* Expand/Collapse button */}
+                      <button
+                        onClick={() => setShowDetails((prev) => !prev)}
+                        className="ml-2 text-green-600 hover:text-green-700 transition"
+                      >
+                        {showDetails ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Detailed view - single paragraph */}
+                    {showDetails && (
+                      <div className="mt-3 p-4 bg-white border border-gray-200 rounded-xl shadow-lg text-sm text-gray-600 leading-relaxed">
+                        <p>
+                          The system is generating{" "}
+                          <span className="font-medium">vector embeddings</span>{" "}
+                          of the knowledge base. This step takes longer only the{" "}
+                          <span className="font-medium">first time</span>, but
+                          once cached, future queries will be answered{" "}
+                          <span className="text-green-600 font-semibold">
+                            instantly
+                          </span>
+                          .
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
