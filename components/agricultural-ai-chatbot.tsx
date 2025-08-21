@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   SidebarProvider,
   SidebarInset,
@@ -36,6 +36,14 @@ export default function AgriculturalAIChatbot() {
   const [toolsEnabled, setToolsEnabled] = useState(true);
 
   const { saveChatSession, loadChatHistory, isSaving } = useChatHistory();
+
+  // Use ref to avoid stale closure issues
+  const toolsEnabledRef = useRef(toolsEnabled);
+
+  // Update ref when toolsEnabled changes
+  useEffect(() => {
+    toolsEnabledRef.current = toolsEnabled;
+  }, [toolsEnabled]);
 
   // Memoized callback to handle tools enabled changes
   const handleToolsEnabledChange = useCallback((enabled: boolean) => {
@@ -98,7 +106,7 @@ export default function AgriculturalAIChatbot() {
     };
 
     // Debounce the save operation
-    const timeout = setTimeout(saveCurrentSession, 2000);
+    const timeout = setTimeout(saveCurrentSession, 10000);
     return () => clearTimeout(timeout);
   }, [chatSessions, currentSessionId, isLoadingHistory, saveChatSession]);
 
@@ -616,9 +624,10 @@ export default function AgriculturalAIChatbot() {
           };
         } else if (agentMode && currentSession?.agent?.id === "deep-research") {
           // Use specialized workflow agent for deep research
-          const mode = toolsEnabled ? "tooling" : "rag";
+          const currentToolsEnabled = toolsEnabledRef.current;
+          const mode = currentToolsEnabled ? "tooling" : "rag";
           console.log(
-            `Using workflow agent for deep research in ${mode} mode (tools ${toolsEnabled ? "enabled" : "disabled"})`,
+            `Using workflow agent for deep research in ${mode} mode (tools ${currentToolsEnabled ? "enabled" : "disabled"})`,
           );
           const agentResponse = await agriculturalAPI.getWorkflowAgent({
             query: content,
@@ -653,7 +662,7 @@ export default function AgriculturalAIChatbot() {
               success: agentResponse.success,
               answer_quality_grade: agentResponse.answer_quality_grade,
               processing_time: agentResponse.processing_time,
-              mode: "tooling",
+              mode: mode,
               error: agentResponse.error,
             },
           };
@@ -671,12 +680,15 @@ export default function AgriculturalAIChatbot() {
             content.toLowerCase().includes("translation") ||
             selectedLanguage !== "en";
 
+          // Use current tools enabled state from ref to avoid stale closure
+          const currentToolsEnabled = toolsEnabledRef.current;
+
           // Use RAG mode when tools are disabled, or for translation queries
-          const shouldUseRAG = !toolsEnabled || isTranslationQuery;
+          const shouldUseRAG = !currentToolsEnabled || isTranslationQuery;
           const mode = shouldUseRAG ? "rag" : "tooling";
 
           console.log(
-            `Using workflow agent in ${mode} mode (tools ${toolsEnabled ? "enabled" : "disabled"}, translation query: ${isTranslationQuery})`,
+            `Using workflow agent in ${mode} mode (tools ${currentToolsEnabled ? "enabled" : "disabled"}, translation query: ${isTranslationQuery})`,
           );
 
           const agentResponse = await agriculturalAPI.getWorkflowAgent({
@@ -701,7 +713,7 @@ export default function AgriculturalAIChatbot() {
               success: agentResponse.success,
               answer_quality_grade: agentResponse.answer_quality_grade,
               processing_time: agentResponse.processing_time,
-              mode: isTranslationQuery ? "rag" : "tooling",
+              mode: mode,
               error: agentResponse.error,
             },
           };

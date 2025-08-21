@@ -31,7 +31,7 @@ export function formatTimestamp(
   options: Intl.DateTimeFormatOptions = {
     hour: "2-digit",
     minute: "2-digit",
-  }
+  },
 ): string {
   const date = ensureDate(timestamp);
   return date.toLocaleTimeString([], options);
@@ -46,7 +46,7 @@ export function formatDate(
     year: "numeric",
     month: "short",
     day: "numeric",
-  }
+  },
 ): string {
   const date = ensureDate(timestamp);
   return date.toLocaleDateString([], options);
