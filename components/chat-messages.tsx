@@ -60,7 +60,7 @@ export function ChatMessages({
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
     if (isLoading) {
-      timer = setTimeout(() => setShowEmbeddingNotice(true), 20000); // 20s delay
+      timer = setTimeout(() => setShowEmbeddingNotice(true), 15000); // 215s delay
     } else {
       setShowEmbeddingNotice(false);
       setShowDetails(false);

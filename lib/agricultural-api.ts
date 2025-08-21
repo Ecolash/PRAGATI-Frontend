@@ -1203,7 +1203,7 @@ class AgriculturalAPIService {
           },
           body: JSON.stringify({
             query: request.query,
-            mode: request.mode,
+            mode: "tooling",
           }),
         });
       }

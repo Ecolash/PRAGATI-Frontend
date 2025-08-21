@@ -5,7 +5,7 @@ import "./globals.css";
 export const metadata = {
   title: "Pragati - Agri AI",
   icons: {
-    icon: "/favicon.ico",
+    icon: "public/favicon.ico",
   },
 };
 
