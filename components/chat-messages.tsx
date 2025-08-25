@@ -165,12 +165,14 @@ export function ChatMessages({
                   }`}
                 >
                   {message.role === "assistant" ? (
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      rehypePlugins={[rehypeHighlight]}
-                    >
-                      {message.content}
-                    </ReactMarkdown>
+                    <div className="markdown-body">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeHighlight]}
+                      >
+                        {message.content}
+                      </ReactMarkdown>
+                    </div>
                   ) : (
                     <div className="whitespace-pre-wrap leading-relaxed">
                       {message.content}

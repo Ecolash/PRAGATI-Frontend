@@ -141,7 +141,6 @@
   }
 }
 
-
 /* Added custom slider styles to remove thumb and ensure proper blue colors */
 @layer components {
     /* Custom slider styles to remove the thumb/handle */
@@ -151,5 +150,126 @@
 
     .slider-no-thumb [role="slider"] {
         display: none !important;
+    }
+}
+
+
+/* Added markdown styles for agriculture AI chatbot */
+@layer components {
+    /* Headings - compact spacing */
+    .markdown-body h1,
+    .markdown-body h2,
+    .markdown-body h3,
+    .markdown-body h4,
+    .markdown-body h5,
+    .markdown-body h6 {
+        @apply font-semibold text-green-900;
+        margin-top: 0.75rem;
+        margin-bottom: 0.5rem;
+        line-height: 1.2;
+    }
+
+    .markdown-body h1 { font-size: 1.875rem; }
+    .markdown-body h2 { font-size: 1.5rem; }
+    .markdown-body h3 { font-size: 1.25rem; }
+    .markdown-body h4 { font-size: 1.125rem; }
+    .markdown-body h5 { font-size: 1rem; }
+    .markdown-body h6 { font-size: 0.875rem; }
+
+    /* Compact paragraphs with smaller text */
+    .markdown-body p {
+        @apply text-[14px];
+        margin-bottom: 0.5rem;
+        line-height: 1.4;
+    }
+
+    /* Clean links with Tailwind primary */
+    .markdown-body a {
+        @apply text-primary no-underline;
+    }
+    .markdown-body a:hover {
+        @apply underline;
+    }
+
+    /* Compact lists */
+    .markdown-body ul,
+    .markdown-body ol {
+        padding-left: 1rem;
+        margin-bottom: 0.5rem;
+        @apply text-[14px];
+    }
+    .markdown-body ul li {
+        list-style-type: disc;
+        margin-bottom: 0.25rem;
+        @apply text-[14px];
+    }
+
+    /* Simple blockquotes */
+    .markdown-body blockquote {
+        @apply border-l-4 border-green-600 text-muted-foreground;
+        margin: 0.5rem 0;
+        padding-left: 0.75rem;
+    }
+
+    /* Clean code blocks */
+    .markdown-body pre {
+        @apply bg-muted text-foreground border border-border;
+        padding: 0.75rem;
+        border-radius: 0.375rem;
+        overflow-x: auto;
+        margin: 0.5rem 0;
+    }
+
+    .markdown-body code {
+        @apply bg-muted text-foreground;
+        padding: 0.125rem 0.25rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+    }
+
+    /* Compact, clean tables with Tailwind green shades */
+    .markdown-body table {
+        @apply w-full border-collapse;
+        margin: 0.5rem 0;
+        font-size: 12px;
+        background-color: theme('colors.green.50');
+        border-radius: 0.5rem;
+        overflow: hidden;
+        border: 2px solid theme('colors.green.200');
+    }
+
+    .markdown-body th,
+    .markdown-body td {
+        @apply text-left;
+        padding: 0.3rem 0.4rem;
+        border: none;
+        border-bottom: 1px solid theme('colors.green.200');
+    }
+
+    .markdown-body th {
+        @apply font-bold text-green-950;
+        background-color: theme('colors.green.800');
+        color: theme('colors.green.50');
+        padding: 0.375rem 0.5rem;
+        font-size: 0.8125rem;
+        letter-spacing: 0.025em;
+    }
+
+    .markdown-body td {
+        @apply bg-transparent;
+    }
+
+    .markdown-body tr:nth-child(even) td {
+        background-color: theme('colors.green.100');
+    }
+
+    .markdown-body tr:hover td {
+        background-color: theme('colors.green.200');
+    }
+
+    /* Bold text with dark green emphasis */
+    .markdown-body strong,
+    .markdown-body b {
+        @apply font-semibold text-green-700;
     }
 }
