@@ -1,6 +1,7 @@
+/* eslint-disable prettier/prettier */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
@@ -31,9 +32,12 @@ import {
   Gauge,
 } from "lucide-react";
 import { format, isSameDay } from "date-fns";
+import { getUser } from "@/lib/actions/getUser";
+import { ensureDate } from "@/lib/date-utils";
 
 interface IrrigationDetail {
-  date: Date;
+  id: number;
+  irrigationDate: Date;
   areaIrrigated: number; // in acres
   waterUsed: number; // in liters
   notes?: string;
@@ -44,17 +48,44 @@ export function IrrigationCalendar() {
     IrrigationDetail[]
   >([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    new Date(),
+    new Date()
   );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDetail, setEditingDetail] = useState<IrrigationDetail | null>(
-    null,
+    null
   );
   const [formData, setFormData] = useState({
     areaIrrigated: "",
     waterUsed: "",
     notes: "",
   });
+
+  const [userId, setUserId] = useState<number | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    getUser().then((res) => {
+      setUserId(res.user?.id ?? null);
+      setLoading(false);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    const fetchRecords = async () => {
+      const res = await fetch(`/api/irrigation-calendar?userId=${userId}`);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setIrrigationDetails(
+          data.map((d) => ({
+            ...d,
+            irrigationDate: ensureDate(d.irrigationDate),
+          }))
+        );
+      }
+    };
+    fetchRecords();
+  }, [userId, loading]);
 
   const handleDateSelect = (date: Date | undefined) => {
     if (!date) return;
@@ -63,7 +94,7 @@ export function IrrigationCalendar() {
 
     // Check if date already has irrigation details
     const existingDetail = irrigationDetails.find((detail) =>
-      isSameDay(detail.date, date),
+      isSameDay(detail.irrigationDate, date)
     );
 
     if (existingDetail) {
@@ -87,22 +118,33 @@ export function IrrigationCalendar() {
     }
   };
 
-  const handleSaveIrrigation = () => {
+  const handleSaveIrrigation = async () => {
     if (!selectedDate || !formData.areaIrrigated || !formData.waterUsed) return;
 
-    const newDetail: IrrigationDetail = {
-      date: selectedDate,
-      areaIrrigated: Number.parseFloat(formData.areaIrrigated),
-      waterUsed: Number.parseFloat(formData.waterUsed),
+    const payload = {
+      userId,
+      irrigationDate: selectedDate,
+      areaIrrigated: Number(formData.areaIrrigated),
+      waterUsed: Number(formData.waterUsed),
       notes: formData.notes,
     };
+
+    const res = await fetch("/api/irrigation-calendar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const newDetail = await res.json();
 
     if (editingDetail) {
       // Update existing detail
       setIrrigationDetails((prev) =>
         prev.map((detail) =>
-          isSameDay(detail.date, selectedDate) ? newDetail : detail,
-        ),
+          isSameDay(ensureDate(detail.irrigationDate), selectedDate)
+            ? newDetail
+            : detail
+        )
       );
     } else {
       // Add new detail
@@ -115,7 +157,7 @@ export function IrrigationCalendar() {
 
   const handleDeleteIrrigation = (date: Date) => {
     setIrrigationDetails((prev) =>
-      prev.filter((detail) => !isSameDay(detail.date, date)),
+      prev.filter((detail) => !isSameDay(detail.irrigationDate, date))
     );
     setIsDialogOpen(false);
   };
@@ -126,12 +168,16 @@ export function IrrigationCalendar() {
 
   const getRecentIrrigationDetails = () => {
     return irrigationDetails
-      .sort((a, b) => b.date.getTime() - a.date.getTime())
+      .sort(
+        (a, b) =>
+          ensureDate(b.irrigationDate).getTime() -
+          ensureDate(a.irrigationDate).getTime()
+      )
       .slice(0, 5);
   };
 
   const modifiers = {
-    irrigated: irrigationDetails.map((detail) => detail.date),
+    irrigated: irrigationDetails.map((detail) => detail.irrigationDate),
   };
 
   const modifiersStyles = {
@@ -144,12 +190,25 @@ export function IrrigationCalendar() {
 
   const totalArea = irrigationDetails.reduce(
     (sum, detail) => sum + detail.areaIrrigated,
-    0,
+    0
   );
   const totalWater = irrigationDetails.reduce(
     (sum, detail) => sum + detail.waterUsed,
-    0,
+    0
   );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Droplets className="h-8 w-8 text-blue-600 animate-bounce mb-4" />
+          <h2 className="text-xl font-semibold text-gray-700">
+            Loading your irrigation records...
+          </h2>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4">
@@ -248,9 +307,10 @@ export function IrrigationCalendar() {
                     {
                       irrigationDetails.filter(
                         (detail) =>
-                          detail.date.getMonth() === new Date().getMonth() &&
-                          detail.date.getFullYear() ===
-                            new Date().getFullYear(),
+                          ensureDate(detail.irrigationDate).getMonth() ===
+                            new Date().getMonth() &&
+                          ensureDate(detail.irrigationDate).getFullYear() ===
+                            new Date().getFullYear()
                       ).length
                     }
                   </Badge>
@@ -309,13 +369,15 @@ export function IrrigationCalendar() {
                           <div className="flex items-center gap-2">
                             <Droplets className="h-4 w-4 text-blue-600" />
                             <span className="text-sm font-medium text-gray-900">
-                              {format(detail.date, "MMM dd, yyyy")}
+                              {format(detail.irrigationDate, "MMM dd, yyyy")}
                             </span>
                           </div>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDateSelect(detail.date)}
+                            onClick={() =>
+                              handleDateSelect(detail.irrigationDate)
+                            }
                             className="h-6 w-6 p-0 text-blue-600 hover:bg-blue-100"
                           >
                             <Edit3 className="h-3 w-3" />
