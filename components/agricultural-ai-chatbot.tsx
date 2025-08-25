@@ -25,6 +25,7 @@ import { WeatherForecast } from "@/components/weather-forecast";
 import { CropYieldPredictor } from "@/components/crop-yield-predictor";
 import { AgriculturalNewsFeed } from "@/components/agricultural-news-feed";
 import { APIHealthCheck } from "@/components/api-health-check";
+import { buildPromptWithUserContext } from "@/lib/utils";
 
 export default function AgriculturalAIChatbot() {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -629,8 +630,9 @@ export default function AgriculturalAIChatbot() {
           console.log(
             `Using workflow agent for deep research in ${mode} mode (tools ${currentToolsEnabled ? "enabled" : "disabled"})`,
           );
+          const prompt = await buildPromptWithUserContext(content, "Tuhin");
           const agentResponse = await agriculturalAPI.getWorkflowAgent({
-            query: content,
+            query: prompt,
             mode: mode,
             image: files?.[0],
           });
@@ -691,8 +693,9 @@ export default function AgriculturalAIChatbot() {
             `Using workflow agent in ${mode} mode (tools ${currentToolsEnabled ? "enabled" : "disabled"}, translation query: ${isTranslationQuery})`,
           );
 
+          const prompt = await buildPromptWithUserContext(content, "Tuhin");
           const agentResponse = await agriculturalAPI.getWorkflowAgent({
-            query: content,
+            query: prompt,
             mode: mode,
             image: files?.[0],
           });
