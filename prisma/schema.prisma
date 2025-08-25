@@ -17,6 +17,7 @@ model User {
   aadharNumber String        @unique
   password     String
   chatSessions ChatSession[]
+  irrigationRecords IrrigationCalendar[]
 }
 
 model ChatSession {
@@ -51,3 +52,17 @@ model ChatMessage {
   @@index([sessionId])
   @@index([createdAt])
 }
+
+  model IrrigationCalendar {
+    id             Int      @id @default(autoincrement())
+    userId         Int
+    user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    irrigationDate DateTime
+    areaIrrigated  Float
+    waterUsed      Float
+    notes          String?
+    createdAt      DateTime @default(now())
+
+    @@index([userId])
+    @@index([irrigationDate])
+  }
