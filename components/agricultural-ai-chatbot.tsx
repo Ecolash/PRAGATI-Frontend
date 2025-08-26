@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
@@ -26,6 +27,14 @@ import { CropYieldPredictor } from "@/components/crop-yield-predictor";
 import { AgriculturalNewsFeed } from "@/components/agricultural-news-feed";
 import { APIHealthCheck } from "@/components/api-health-check";
 import { buildPromptWithUserContext } from "@/lib/utils";
+import { getUser } from "@/lib/actions/getUser";
+
+type UserType = {
+  id: string;
+  fullName: string;
+  username: string;
+  aadharNumber: string;
+};
 
 export default function AgriculturalAIChatbot() {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -37,6 +46,7 @@ export default function AgriculturalAIChatbot() {
   const [toolsEnabled, setToolsEnabled] = useState(true);
 
   const { saveChatSession, loadChatHistory, isSaving } = useChatHistory();
+  const [user, setUser] = useState<UserType | null>(null);
 
   // Use ref to avoid stale closure issues
   const toolsEnabledRef = useRef(toolsEnabled);
@@ -52,7 +62,7 @@ export default function AgriculturalAIChatbot() {
   }, []);
 
   const currentSession = chatSessions.find(
-    (session) => session.id === currentSessionId,
+    (session) => session.id === currentSessionId
   );
 
   console.log("Current Session ID:", currentSessionId);
@@ -60,6 +70,9 @@ export default function AgriculturalAIChatbot() {
 
   // Load chat history on component mount
   useEffect(() => {
+    getUser().then((data) => {
+      setUser(data.user);
+    });
     const initializeChatHistory = async () => {
       try {
         console.log("Loading chat history...");
@@ -93,7 +106,7 @@ export default function AgriculturalAIChatbot() {
     const saveCurrentSession = async () => {
       if (currentSessionId) {
         const sessionToSave = chatSessions.find(
-          (s) => s.id === currentSessionId,
+          (s) => s.id === currentSessionId
         );
         if (sessionToSave && sessionToSave.messages.length > 0) {
           try {
@@ -161,7 +174,7 @@ export default function AgriculturalAIChatbot() {
         setCurrentSessionId(newSession.id);
       }
     },
-    [selectedLanguage],
+    [selectedLanguage]
   );
 
   const handleLanguageChange = useCallback((language: Language) => {
@@ -192,7 +205,7 @@ export default function AgriculturalAIChatbot() {
         //console.log("Calling translation API...");
         const translationResult = await agriculturalAPI.translateText(
           message.content,
-          targetLanguage,
+          targetLanguage
         );
         //console.log("Translation Result:", translationResult);
 
@@ -210,11 +223,11 @@ export default function AgriculturalAIChatbot() {
                             [targetLanguage]: translationResult.translated_text,
                           },
                         }
-                      : msg,
+                      : msg
                   ),
                 }
-              : session,
-          ),
+              : session
+          )
         );
         //console.log("Translation stored successfully");
       } catch (error: any) {
@@ -234,15 +247,15 @@ export default function AgriculturalAIChatbot() {
                             [targetLanguage]: `[Translation unavailable] ${msg.content}`,
                           },
                         }
-                      : msg,
+                      : msg
                   ),
                 }
-              : session,
-          ),
+              : session
+          )
         );
       }
     },
-    [currentSessionId, chatSessions],
+    [currentSessionId, chatSessions]
   );
 
   const sendMessage = useCallback(
@@ -292,8 +305,8 @@ export default function AgriculturalAIChatbot() {
                     : session.title,
                 updatedAt: new Date(),
               }
-            : session,
-        ),
+            : session
+        )
       );
 
       setIsLoading(true);
@@ -305,9 +318,13 @@ export default function AgriculturalAIChatbot() {
         if (agentMode && currentSession?.agent?.id === "crop-recommendations") {
           // Use specialized crop recommendation agent endpoint
           console.log("Using crop recommendation agent");
+          const prompt = await buildPromptWithUserContext(
+            content,
+            user?.fullName || "Farmer"
+          );
           const agentResponse =
             await agriculturalAPI.getCropRecommendationAgent({
-              prompt: content,
+              prompt: prompt,
             });
 
           // Format the response nicely
@@ -340,8 +357,12 @@ export default function AgriculturalAIChatbot() {
         ) {
           // Use specialized weather forecast agent endpoint
           console.log("Using weather forecast agent");
+          const prompt = await buildPromptWithUserContext(
+            content,
+            user?.fullName || "Farmer"
+          );
           const agentResponse = await agriculturalAPI.getWeatherForecastAgent({
-            query: content,
+            query: prompt,
           });
 
           // Use the response from the agent
@@ -365,8 +386,12 @@ export default function AgriculturalAIChatbot() {
         } else if (agentMode && currentSession?.agent?.id === "crop-yield") {
           // Use specialized crop yield agent endpoint
           console.log("Using crop yield agent");
+          const prompt = await buildPromptWithUserContext(
+            content,
+            user?.fullName || "Farmer"
+          );
           const agentResponse = await agriculturalAPI.getCropYieldAgent({
-            query: content,
+            query: prompt,
           });
 
           // Use the response from the agent
@@ -394,9 +419,13 @@ export default function AgriculturalAIChatbot() {
         ) {
           // Use specialized credit policy market agent endpoint
           console.log("Using credit policy market agent");
+          const prompt = await buildPromptWithUserContext(
+            content,
+            user?.fullName || "Farmer"
+          );
           const agentResponse =
             await agriculturalAPI.getCreditPolicyMarketAgent({
-              query: content,
+              query: prompt,
             });
 
           // Use the response from the agent
@@ -424,8 +453,12 @@ export default function AgriculturalAIChatbot() {
         ) {
           // Use specialized pest prediction agent endpoint
           console.log("Using pest prediction agent");
+          const prompt = await buildPromptWithUserContext(
+            content,
+            user?.fullName || "Farmer"
+          );
           const agentResponse = await agriculturalAPI.getPestPredictionAgent({
-            query: content,
+            query: prompt,
             // Note: imageFile would need to be passed from the files parameter if available
             imageFile: files?.[0],
           });
@@ -469,12 +502,16 @@ export default function AgriculturalAIChatbot() {
         } else if (agentMode && currentSession?.agent?.id === "crop-health") {
           // Use specialized crop disease detection agent endpoint
           console.log("Using crop disease detection agent");
+          const prompt = await buildPromptWithUserContext(
+            content,
+            user?.fullName || "Farmer"
+          );
 
           // The new API supports both image-based and text-based analysis
           const agentResponse =
             await agriculturalAPI.getCropDiseaseDetectionAgent({
               imageFile: files?.[0], // Optional - can be undefined
-              query: content,
+              query: prompt,
             });
 
           // Format the response nicely
@@ -544,8 +581,12 @@ export default function AgriculturalAIChatbot() {
         } else if (agentMode && currentSession?.agent?.id === "market-prices") {
           // Use specialized market price agent endpoint
           console.log("Using market price agent");
+          const prompt = await buildPromptWithUserContext(
+            content,
+            user?.fullName || "Farmer"
+          );
           const agentResponse = await agriculturalAPI.getMarketPriceAgent({
-            query: content,
+            query: prompt,
           });
 
           // Use the response from the agent
@@ -573,8 +614,12 @@ export default function AgriculturalAIChatbot() {
         ) {
           // Use specialized risk management agent endpoint
           console.log("Using risk management agent");
+          const prompt = await buildPromptWithUserContext(
+            content,
+            user?.fullName || "Farmer"
+          );
           const agentResponse = await agriculturalAPI.getRiskManagementAgent({
-            query: content,
+            query: prompt,
           });
 
           // Format the response nicely
@@ -628,9 +673,12 @@ export default function AgriculturalAIChatbot() {
           const currentToolsEnabled = toolsEnabledRef.current;
           const mode = currentToolsEnabled ? "tooling" : "rag";
           console.log(
-            `Using workflow agent for deep research in ${mode} mode (tools ${currentToolsEnabled ? "enabled" : "disabled"})`,
+            `Using workflow agent for deep research in ${mode} mode (tools ${currentToolsEnabled ? "enabled" : "disabled"})`
           );
-          const prompt = await buildPromptWithUserContext(content, "Tuhin");
+          const prompt = await buildPromptWithUserContext(
+            content,
+            user?.fullName || "Farmer"
+          );
           const agentResponse = await agriculturalAPI.getWorkflowAgent({
             query: prompt,
             mode: mode,
@@ -673,7 +721,7 @@ export default function AgriculturalAIChatbot() {
           console.log(
             "Using workflow agent for generic/multilingual support ",
             agentMode,
-            currentSession?.agent?.id,
+            currentSession?.agent?.id
           );
 
           // Check if this is a translation request or multilingual query
@@ -690,10 +738,13 @@ export default function AgriculturalAIChatbot() {
           const mode = shouldUseRAG ? "rag" : "tooling";
 
           console.log(
-            `Using workflow agent in ${mode} mode (tools ${currentToolsEnabled ? "enabled" : "disabled"}, translation query: ${isTranslationQuery})`,
+            `Using workflow agent in ${mode} mode (tools ${currentToolsEnabled ? "enabled" : "disabled"}, translation query: ${isTranslationQuery})`
           );
 
-          const prompt = await buildPromptWithUserContext(content, "Tuhin");
+          const prompt = await buildPromptWithUserContext(
+            content,
+            user?.fullName || "Farmer"
+          );
           const agentResponse = await agriculturalAPI.getWorkflowAgent({
             query: prompt,
             mode: mode,
@@ -730,8 +781,8 @@ export default function AgriculturalAIChatbot() {
                   messages: [...session.messages, assistantMessage],
                   updatedAt: new Date(),
                 }
-              : session,
-          ),
+              : session
+          )
         );
       } catch (error) {
         console.error("Failed to get AI response:", error);
@@ -755,8 +806,8 @@ export default function AgriculturalAIChatbot() {
                   messages: [...session.messages, errorMessage],
                   updatedAt: new Date(),
                 }
-              : session,
-          ),
+              : session
+          )
         );
       } finally {
         setIsLoading(false);
@@ -768,7 +819,7 @@ export default function AgriculturalAIChatbot() {
       selectedLanguage,
       agentMode,
       currentSession,
-    ],
+    ]
   );
 
   const getAgentPresetMessage = (agentId?: string) => {
