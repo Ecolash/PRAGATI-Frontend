@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { NextRequest, NextResponse } from "next/server";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 import { agriculturalAPI } from "@/lib/agricultural-api";
@@ -24,6 +25,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Only after verification, call agricultural API
+    console.log("Calling agricultural API...");
     const agentResponse = await agriculturalAPI.getWorkflowAgent({
       query: message,
       mode: mode as "rag" | "tooling",

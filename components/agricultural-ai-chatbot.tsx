@@ -28,6 +28,7 @@ import { AgriculturalNewsFeed } from "@/components/agricultural-news-feed";
 import { APIHealthCheck } from "@/components/api-health-check";
 import { buildPromptWithUserContext } from "@/lib/utils";
 import { getUser } from "@/lib/actions/getUser";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 type UserType = {
   id: string;
@@ -44,6 +45,7 @@ export default function AgriculturalAIChatbot() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [agentMode, setAgentMode] = useState(false);
   const [toolsEnabled, setToolsEnabled] = useState(true);
+  const [turnstileToken, setTurnstileToken] = useState("");
 
   const { saveChatSession, loadChatHistory, isSaving } = useChatHistory();
   const [user, setUser] = useState<UserType | null>(null);
@@ -260,6 +262,12 @@ export default function AgriculturalAIChatbot() {
 
   const sendMessage = useCallback(
     async (content: string, files?: File[]) => {
+      // Check if we have a valid Turnstile token
+      if (!turnstileToken) {
+        alert("Please complete the security verification to send a message.");
+        return;
+      }
+
       let sessionId = currentSessionId;
 
       if (!sessionId) {
@@ -361,6 +369,7 @@ export default function AgriculturalAIChatbot() {
             content,
             user?.fullName || "Farmer"
           );
+          console.log("Using weather forecast agent 2");
           const agentResponse = await agriculturalAPI.getWeatherForecastAgent({
             query: prompt,
           });
@@ -690,7 +699,22 @@ export default function AgriculturalAIChatbot() {
             : `Research error: ${agentResponse.error || "Unknown error occurred"}\n\n`;
 
           if (agentResponse.success && agentResponse.response) {
-            formattedResponse += agentResponse.response;
+            // Clean the response to remove chart path references since we'll display charts visually
+            let cleanedResponse = agentResponse.response;
+            if (agentResponse.chart_path) {
+              // Remove any mentions of chart file paths from the response
+              cleanedResponse = cleanedResponse.replace(
+                /Chart available at:.*$/gm,
+                ""
+              );
+              cleanedResponse = cleanedResponse.replace(
+                /The attached chart.*$/gm,
+                ""
+              );
+              cleanedResponse = cleanedResponse.trim();
+            }
+
+            formattedResponse += cleanedResponse;
 
             if (agentResponse.answer_quality_grade) {
               formattedResponse += `\n\n📊 **Answer Quality Score:** ${JSON.stringify(agentResponse.answer_quality_grade)}`;
@@ -714,14 +738,18 @@ export default function AgriculturalAIChatbot() {
               processing_time: agentResponse.processing_time,
               mode: mode,
               error: agentResponse.error,
+              chart_path: agentResponse.chart_path,
+              chart_extra_message: agentResponse.chart_extra_message,
+              is_answer_complete: agentResponse.is_answer_complete,
+              final_mode: agentResponse.final_mode,
+              switched_modes: agentResponse.switched_modes,
+              is_image_query: agentResponse.is_image_query,
             },
           };
         } else {
-          // Use workflow agent for generic queries and multilingual support
+          // Use secure chat API route for generic queries and multilingual support
           console.log(
-            "Using workflow agent for generic/multilingual support ",
-            agentMode,
-            currentSession?.agent?.id
+            "Using secure chat API route for generic/multilingual support"
           );
 
           // Check if this is a translation request or multilingual query
@@ -738,18 +766,34 @@ export default function AgriculturalAIChatbot() {
           const mode = shouldUseRAG ? "rag" : "tooling";
 
           console.log(
-            `Using workflow agent in ${mode} mode (tools ${currentToolsEnabled ? "enabled" : "disabled"}, translation query: ${isTranslationQuery})`
+            `Using chat API in ${mode} mode (tools ${currentToolsEnabled ? "enabled" : "disabled"}, translation query: ${isTranslationQuery})`
           );
 
           const prompt = await buildPromptWithUserContext(
             content,
             user?.fullName || "Farmer"
           );
-          const agentResponse = await agriculturalAPI.getWorkflowAgent({
-            query: prompt,
-            mode: mode,
-            image: files?.[0],
+
+          // Call our secure API route instead of direct agricultural API
+          const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              message: prompt,
+              files: files,
+              mode: mode,
+              turnstileToken: turnstileToken,
+            }),
           });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Chat API failed");
+          }
+
+          const agentResponse = await response.json();
 
           const responseContent = agentResponse.success
             ? agentResponse.response ||
@@ -811,6 +855,8 @@ export default function AgriculturalAIChatbot() {
         );
       } finally {
         setIsLoading(false);
+        // Reset Turnstile token after use
+        setTurnstileToken("");
       }
     },
     [
@@ -819,6 +865,7 @@ export default function AgriculturalAIChatbot() {
       selectedLanguage,
       agentMode,
       currentSession,
+      turnstileToken,
     ]
   );
 
@@ -862,6 +909,63 @@ export default function AgriculturalAIChatbot() {
             disabled={isLoading}
             placeholder={getAgentPresetMessage(currentSession.agent.id)}
           />
+          <div className="p-3 border-t">
+            <div className="flex justify-center">
+              {!turnstileToken ? (
+                <div
+                  style={{
+                    borderRadius: "0.5rem",
+                    border: "1px solid #e5e7eb",
+                    padding: "0.75rem 1.5rem",
+                    background: "#fff",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+                    minWidth: 260,
+                    maxWidth: 340,
+                    display: "flex",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Turnstile
+                    siteKey={
+                      process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ||
+                      "0x4AAAAAABu9IhavKy4c6vpY"
+                    }
+                    onSuccess={(token) => {
+                      console.log("Turnstile verification successful");
+                      setTurnstileToken(token);
+                    }}
+                    onError={(error) => {
+                      console.error("Turnstile verification failed:", error);
+                      setTurnstileToken("");
+                    }}
+                    onExpire={() => {
+                      console.log("Turnstile token expired");
+                      setTurnstileToken("");
+                    }}
+                    options={{
+                      theme: "light",
+                      size: "compact",
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-sm text-green-600">
+                  <svg
+                    className="w-4 h-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span>Verified</span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       );
     }
@@ -1000,6 +1104,52 @@ export default function AgriculturalAIChatbot() {
                   switchMode={true}
                   onToolsEnabledChange={handleToolsEnabledChange}
                 />
+                <div className="p-3 border-t">
+                  <div className="flex justify-center">
+                    {!turnstileToken ? (
+                      <Turnstile
+                        siteKey={
+                          process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ||
+                          "0x4AAAAAABu9IhavKy4c6vpY"
+                        }
+                        onSuccess={(token) => {
+                          console.log("Turnstile verification successful");
+                          setTurnstileToken(token);
+                        }}
+                        onError={(error) => {
+                          console.error(
+                            "Turnstile verification failed:",
+                            error
+                          );
+                          setTurnstileToken("");
+                        }}
+                        onExpire={() => {
+                          console.log("Turnstile token expired");
+                          setTurnstileToken("");
+                        }}
+                        options={{
+                          theme: "light",
+                          size: "compact",
+                        }}
+                      />
+                    ) : (
+                      <div className="flex items-center gap-2 text-sm text-green-600">
+                        <svg
+                          className="w-4 h-4"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        <span>Verified</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </>
             )}
           </div>
