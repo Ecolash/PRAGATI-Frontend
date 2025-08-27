@@ -144,7 +144,13 @@ export interface WorkflowAgentResponse {
   success: boolean;
   response?: string;
   answer?: string;
-  answer_quality_grade?: any;
+  answer_quality_grade?: Record<string, any>;
+  is_answer_complete?: boolean;
+  final_mode?: string;
+  switched_modes?: boolean;
+  is_image_query?: boolean;
+  chart_path?: string;
+  chart_extra_message?: string;
   processing_time?: number;
   error?: string;
 }
@@ -1227,6 +1233,12 @@ class AgriculturalAPIService {
         response: data.answer || data.response || null,
         answer: data.answer || data.response || null,
         answer_quality_grade: data.answer_quality_grade || null,
+        is_answer_complete: data.is_answer_complete || null,
+        final_mode: data.final_mode || null,
+        switched_modes: data.switched_modes || null,
+        is_image_query: data.is_image_query || null,
+        chart_path: data.chart_path || null,
+        chart_extra_message: data.chart_extra_message || null,
         processing_time: data.processing_time || null,
         error: data.error || null,
       };

@@ -56,6 +56,12 @@ export interface ChatMessage {
     answer_quality_grade?: any;
     processing_time?: number;
     mode?: "rag" | "tooling";
+    chart_path?: string;
+    chart_extra_message?: string;
+    is_answer_complete?: boolean;
+    final_mode?: string;
+    switched_modes?: boolean;
+    is_image_query?: boolean;
   };
   error?: boolean;
 }

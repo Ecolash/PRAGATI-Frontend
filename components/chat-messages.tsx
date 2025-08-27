@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -29,7 +30,7 @@ interface ChatMessagesProps {
   isLoading?: boolean;
   onTranslateActionMessageAction: (
     messageId: string,
-    targetLanguage: string,
+    targetLanguage: string
   ) => void;
   onSelectAgentAction?: (agentId: string) => void; // ✅ new prop
 }
@@ -179,6 +180,75 @@ export function ChatMessages({
                     </div>
                   )}
 
+                  {/* Chart display for workflow agent responses */}
+                  {message.role === "assistant" &&
+                    message.metadata?.chart_path && (
+                      <div className="mt-4 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <span className="text-sm font-medium text-blue-700">
+                              Generated Chart
+                            </span>
+                          </div>
+                          {/* Download button for ImageKit URLs */}
+                          {message.metadata.chart_path?.includes(
+                            "imagekit.io"
+                          ) && (
+                            <a
+                              href={message.metadata.chart_path}
+                              download
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 hover:text-blue-800 underline"
+                            >
+                              Download
+                            </a>
+                          )}
+                        </div>
+                        <div className="bg-white p-3 rounded-md border relative">
+                          <img
+                            src={
+                              message.metadata.chart_path?.includes(
+                                "imagekit.io"
+                              )
+                                ? `${message.metadata.chart_path}?tr=w-800,h-400,c-at_max,q-90,f-auto`
+                                : message.metadata.chart_path
+                            }
+                            alt="Generated chart"
+                            className="w-full h-auto max-w-full rounded border"
+                            style={{ maxHeight: "400px", objectFit: "contain" }}
+                            loading="lazy"
+                            onError={(e) => {
+                              console.error(
+                                "Failed to load chart image:",
+                                message.metadata?.chart_path
+                              );
+                              const errorDiv = document.createElement("div");
+                              errorDiv.className =
+                                "flex items-center justify-center h-32 bg-gray-100 text-gray-500 text-sm rounded border";
+                              errorDiv.innerHTML =
+                                "📊 Chart temporarily unavailable";
+                              e.currentTarget.parentNode?.replaceChild(
+                                errorDiv,
+                                e.currentTarget
+                              );
+                            }}
+                          />
+                        </div>
+                        {message.metadata.chart_extra_message && (
+                          <div className="mt-3 text-sm text-blue-600 bg-blue-50 p-3 rounded border border-blue-200">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              rehypePlugins={[rehypeHighlight]}
+                            >
+                              {message.metadata.chart_extra_message}
+                            </ReactMarkdown>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                   {message.attachments && message.attachments.length > 0 && (
                     <div className="mt-3 space-y-2">
                       {message.attachments.map((attachment) => (
@@ -203,7 +273,7 @@ export function ChatMessages({
                         {Object.entries(message.translations).map(
                           ([langCode, translation]) => {
                             const language = supportedLanguages.find(
-                              (l) => l.code === langCode,
+                              (l) => l.code === langCode
                             );
                             if (!language) return null;
 
@@ -223,11 +293,110 @@ export function ChatMessages({
                                 <div className="pl-6">{translation}</div>
                               </div>
                             );
-                          },
+                          }
                         )}
                       </div>
                     )}
                 </div>
+
+                {/* Workflow agent metadata display */}
+                {message.role === "assistant" &&
+                  message.metadata?.agent_type === "deep-research" &&
+                  (message.metadata.final_mode ||
+                    message.metadata.switched_modes ||
+                    message.metadata.is_answer_complete !== undefined) && (
+                    <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-1.5 h-1.5 bg-slate-500 rounded-full"></div>
+                        <span className="text-xs font-medium text-slate-700">
+                          Response Analysis
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
+                        {message.metadata.final_mode && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-slate-500">Mode:</span>
+                            <span
+                              className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                message.metadata.final_mode === "rag"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : "bg-green-100 text-green-700"
+                              }`}
+                            >
+                              {message.metadata.final_mode?.toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        {message.metadata.switched_modes !== undefined && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-slate-500">
+                              Mode Switched:
+                            </span>
+                            <span
+                              className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                message.metadata.switched_modes
+                                  ? "bg-amber-100 text-amber-700"
+                                  : "bg-gray-100 text-gray-700"
+                              }`}
+                            >
+                              {message.metadata.switched_modes ? "Yes" : "No"}
+                            </span>
+                          </div>
+                        )}
+                        {message.metadata.is_answer_complete !== undefined && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-slate-500">Complete:</span>
+                            <span
+                              className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                message.metadata.is_answer_complete
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-red-100 text-red-700"
+                              }`}
+                            >
+                              {message.metadata.is_answer_complete
+                                ? "Yes"
+                                : "No"}
+                            </span>
+                          </div>
+                        )}
+                        {message.metadata.processing_time && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-slate-500">Time:</span>
+                            <span className="text-slate-700 font-mono">
+                              {message.metadata.processing_time.toFixed(2)}s
+                            </span>
+                          </div>
+                        )}
+                        {message.metadata.is_image_query !== undefined && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-slate-500">Image Query:</span>
+                            <span
+                              className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                message.metadata.is_image_query
+                                  ? "bg-purple-100 text-purple-700"
+                                  : "bg-gray-100 text-gray-700"
+                              }`}
+                            >
+                              {message.metadata.is_image_query ? "Yes" : "No"}
+                            </span>
+                          </div>
+                        )}
+                        {message.metadata.answer_quality_grade && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-slate-500">Quality:</span>
+                            <span className="text-slate-700 font-mono text-xs">
+                              {typeof message.metadata.answer_quality_grade ===
+                              "object"
+                                ? JSON.stringify(
+                                    message.metadata.answer_quality_grade
+                                  ).slice(0, 20) + "..."
+                                : message.metadata.answer_quality_grade}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                 <div
                   className={`flex items-center justify-between mt-2 ${
