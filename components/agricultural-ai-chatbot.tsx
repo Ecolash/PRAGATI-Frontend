@@ -29,6 +29,7 @@ import { APIHealthCheck } from "@/components/api-health-check";
 import { buildPromptWithUserContext } from "@/lib/utils";
 import { getUser } from "@/lib/actions/getUser";
 import { Turnstile } from "@marsidev/react-turnstile";
+import {PersonalizationPage} from "@/components/personalised-section";
 
 type UserType = {
   id: string;
@@ -984,6 +985,8 @@ export default function AgriculturalAIChatbot() {
         return <IrrigationCalendar />;
       case "crop-health":
         return <CropDiseaseDetection />;
+      case "personalised-section":
+          return <PersonalizationPage />;
       case "pest-prediction":
         return <PestPrediction />;
       case "price-forecasting":

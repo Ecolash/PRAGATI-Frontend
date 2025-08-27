@@ -10,6 +10,7 @@ import {
   Newspaper,
   Shield,
   Landmark,
+  LightbulbIcon,
 } from "lucide-react";
 import { AgricultureAgent } from "@/types/agriculture";
 
@@ -66,6 +67,15 @@ export const agricultureAgents: AgricultureAgent[] = [
     icon: <Beaker className="h-4 w-4" />,
     category: "advisory",
     color: "text-orange-600",
+    mode: "tool",
+  },
+  {
+    id: "personalised-section",
+    name: "Personalised Tips",
+    description: "Get personalised suggestions",
+    icon: <LightbulbIcon className="h-4 w-4" />,
+    category: "advisory",
+    color: "text-green-600",
     mode: "tool",
   },
   {

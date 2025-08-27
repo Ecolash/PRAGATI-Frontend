@@ -26,3 +26,18 @@ declare global {
     results: SpeechRecognitionResultList;
   }
 }
+
+export interface FarmerProfile {
+  fullName: string;
+  location: string;
+  landHoldings: number;
+  crops: string[];
+  preferredLanguage: string;
+}
+
+export interface Crop {
+  id: string;
+  name: string;
+  emoji: string;
+  category: string;
+}
