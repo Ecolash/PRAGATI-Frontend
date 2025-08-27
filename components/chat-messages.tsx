@@ -10,6 +10,8 @@ import {
   ChevronUp,
   ChevronDown,
   Info,
+  Download,
+  BarChart3,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,6 +26,7 @@ import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github.css";
 import { Marquee } from "./ui/marquee";
 import { agricultureAgents } from "@/data/agents";
+import { Button } from "./ui/button";
 
 interface ChatMessagesProps {
   messages: ChatMessage[];
@@ -61,7 +64,7 @@ export function ChatMessages({
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
     if (isLoading) {
-      timer = setTimeout(() => setShowEmbeddingNotice(true), 15000); // 215s delay
+      timer = setTimeout(() => setShowEmbeddingNotice(true), 30000); // 30s delay
     } else {
       setShowEmbeddingNotice(false);
       setShowDetails(false);
@@ -179,6 +182,79 @@ export function ChatMessages({
                       {message.content}
                     </div>
                   )}
+
+                  {/* Parse and display ImageKit URLs from message content */}
+                  {message.role === "assistant" &&
+                    (() => {
+                      const imagekitRegex =
+                        /https:\/\/ik\.imagekit\.io\/[^\s]+/g;
+                      const imagekitUrls =
+                        message.content.match(imagekitRegex) || [];
+
+                      if (imagekitUrls.length > 0) {
+                        return (
+                          <div className="mt-4 space-y-3">
+                            {imagekitUrls.map((url, index) => (
+                              <Card
+                                key={index}
+                                className="overflow-hidden border-0 shadow-sm bg-gradient-to-br from-slate-50 to-slate-100/50"
+                              >
+                                <CardContent className="p-0">
+                                  {/* Header */}
+                                  <div className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm border-b border-slate-200/60">
+                                    <div className="flex items-center gap-3">
+                                      <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full">
+                                        <BarChart3 className="w-4 h-4 text-blue-600" />
+                                      </div>
+                                      <div>
+                                        <h3 className="text-sm font-semibold text-slate-900">
+                                          Chart{" "}
+                                          {imagekitUrls.length > 1
+                                            ? `${index + 1}`
+                                            : ""}
+                                        </h3>
+                                        <p className="text-xs text-slate-500">
+                                          Generated visualization
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      asChild
+                                      className="h-8 px-3 text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                                    >
+                                      <a
+                                        href={url}
+                                        download
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-2"
+                                      >
+                                        <Download className="w-3.5 h-3.5" />
+                                        <span className="text-xs font-medium">
+                                          Download
+                                        </span>
+                                      </a>
+                                    </Button>
+                                  </div>
+                                  <img
+                                    src={`${url}?tr=w-800,h-400,c-at_max,q-90,f-auto`}
+                                    alt={`Chart ${index + 1}`}
+                                    className="w-full h-auto max-w-full transition-opacity duration-200"
+                                    style={{
+                                      maxHeight: "400px",
+                                      objectFit: "contain",
+                                    }}
+                                  />
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
 
                   {/* Chart display for workflow agent responses */}
                   {message.role === "assistant" &&
