@@ -366,7 +366,16 @@ export function ChatMessages({
                                     {language.nativeName}:
                                   </span>
                                 </div>
-                                <div className="pl-6">{translation}</div>
+                                <div className="pl-6">
+                                    <div className="markdown-body">
+                                    <ReactMarkdown
+                                        remarkPlugins={[remarkGfm]}
+                                        rehypePlugins={[rehypeHighlight]}
+                                    >
+                                        {translation}
+                                    </ReactMarkdown>
+                                </div>
+                                </div>
                               </div>
                             );
                           }
