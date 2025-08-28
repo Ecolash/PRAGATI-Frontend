@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 "use client";
 
 import { useState } from "react";
@@ -18,7 +19,6 @@ import {
   MapPin,
   Sprout,
   Save,
-  Navigation,
   Search,
   X,
   Sun,
@@ -31,10 +31,17 @@ import {
   Waves,
   Banknote,
   User,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
 } from "lucide-react";
 import { supportedLanguages } from "@/data/languages";
 import { availableCrops } from "@/data/crops-data";
 import { Crop, FarmerProfile } from "@/components/types/global";
+import { agriculturalAPI } from "@/lib/agricultural-api";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
 
 export function PersonalizationPage() {
   const [profile, setProfile] = useState<FarmerProfile>({
@@ -46,11 +53,6 @@ export function PersonalizationPage() {
   });
 
   const [selectedCrops, setSelectedCrops] = useState<string[]>([]);
-  const [locationStatus, setLocationStatus] = useState<string>("Not detected");
-  const [coordinates, setCoordinates] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedCategories, setExpandedCategories] = useState<
     Record<string, boolean>
@@ -62,29 +64,17 @@ export function PersonalizationPage() {
   const [budget, setBudget] = useState<string>("");
   const [experience, setExperience] = useState<string>("");
 
-  const updateLocation = () => {
-    setLocationStatus("Detecting...");
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setCoordinates({ lat: latitude, lng: longitude });
-          setLocationStatus("Location detected");
-        },
-        (error) => {
-          setLocationStatus("Location access denied");
-        },
-      );
-    } else {
-      setLocationStatus("Geolocation not supported");
-    }
-  };
+  // States for API integration
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [advice, setAdvice] = useState<string>("");
+  const [error, setError] = useState<string>("");
+  const [showAdvice, setShowAdvice] = useState<boolean>(false);
 
   const handleCropToggle = (cropId: string) => {
     setSelectedCrops((prev) =>
       prev.includes(cropId)
         ? prev.filter((id) => id !== cropId)
-        : [...prev, cropId],
+        : [...prev, cropId]
     );
   };
 
@@ -92,24 +82,66 @@ export function PersonalizationPage() {
     setSelectedCrops((prev) => prev.filter((id) => id !== cropId));
   };
 
-  const handleSave = () => {
-    const updatedProfile = {
-      ...profile,
-      crops: selectedCrops,
-      coordinates,
-      season,
-      farmingType,
-      irrigation,
-      budget,
-      experience,
-    };
-    alert("Profile saved successfully!");
+  const handleSave = async () => {
+    // Validation
+    if (!profile.location.trim()) {
+      setError("Please enter your location");
+      return;
+    }
+    if (!profile.preferredLanguage) {
+      setError("Please select your preferred language");
+      return;
+    }
+    if (selectedCrops.length === 0) {
+      setError("Please select at least one crop");
+      return;
+    }
+    if (!season || !farmingType || !irrigation || !budget || !experience) {
+      setError("Please fill in all required fields");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+    setAdvice("");
+
+    try {
+      // Get crop names from IDs
+      const cropNames = selectedCrops.map((cropId) => {
+        const crop = availableCrops.find((c) => c.id === cropId);
+        return crop ? crop.name : cropId;
+      });
+
+      const response = await agriculturalAPI.getPersonalizedAdvice({
+        user_location: profile.location,
+        preferred_language: profile.preferredLanguage,
+        crops: cropNames,
+        total_land_area: profile.landHoldings,
+        season,
+        farming_type: farmingType,
+        irrigation,
+        budget,
+        experience,
+      });
+
+      setAdvice(response.answer);
+      setShowAdvice(true);
+    } catch (error) {
+      console.error("Error getting personalized advice:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to get personalized advice. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const filteredCrops = availableCrops.filter(
     (crop) =>
       crop.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      crop.category.toLowerCase().includes(searchTerm.toLowerCase()),
+      crop.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const groupedCrops = filteredCrops.reduce(
@@ -120,7 +152,7 @@ export function PersonalizationPage() {
       acc[crop.category].push(crop);
       return acc;
     },
-    {} as Record<string, typeof availableCrops>,
+    {} as Record<string, typeof availableCrops>
   );
 
   const toggleCategory = (category: string) => {
@@ -140,10 +172,10 @@ export function PersonalizationPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-              Farmer Profile
+              Personalized Advice Form
             </h1>
             <p className="text-sm text-green-700">
-              Customize your agricultural settings
+              Get tailored agricultural advice based on your profile
             </p>
           </div>
         </div>
@@ -159,23 +191,25 @@ export function PersonalizationPage() {
             {/* Basic Information */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="space-y-1">
-                <Label className="text-green-700 font-medium text-sm">
+                <Label
+                  htmlFor="location"
+                  className="text-green-700 font-medium text-sm"
+                >
                   Location
                 </Label>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={updateLocation}
-                    variant="outline"
-                    size="sm"
-                    className="border-green-300 text-green-700 hover:bg-green-50 bg-transparent h-8 text-xs"
-                  >
-                    <Navigation className="w-3 h-3 mr-1" />
-                    Update
-                  </Button>
-                  <span className="text-xs text-green-600 self-center">
-                    {locationStatus}
-                  </span>
-                </div>
+                <Input
+                  id="location"
+                  type="text"
+                  value={profile.location}
+                  onChange={(e) =>
+                    setProfile((prev: any) => ({
+                      ...prev,
+                      location: e.target.value,
+                    }))
+                  }
+                  placeholder="Enter your city/district"
+                  className="border-green-200 focus:border-green-500 focus:ring-green-500 h-8 text-sm"
+                />
               </div>
 
               <div className="space-y-1">
@@ -537,12 +571,70 @@ export function PersonalizationPage() {
         <div className="flex justify-center">
           <Button
             onClick={handleSave}
-            className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-4 py-2 text-sm font-semibold shadow-lg hover:shadow-xl transition-all"
+            disabled={isLoading}
+            className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-4 py-2 text-sm font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Save className="w-4 h-4 mr-2" />
-            Save Profile
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Getting Advice...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                Get Personalized Advice
+              </>
+            )}
           </Button>
         </div>
+
+        {/* Error Display */}
+        {error && (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-red-700">
+                <AlertCircle className="w-5 h-5" />
+                <span className="font-medium">Error</span>
+              </div>
+              <p className="text-red-600 mt-2">{error}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Advice Display */}
+        {showAdvice && advice && (
+          <Card className="border-green-200 bg-green-50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-green-800 flex items-center gap-2">
+                <CheckCircle className="w-5 h-5" />
+                Your Personalized Agricultural Advice
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="text-green-700 whitespace-pre-wrap leading-relaxed">
+                <div className="markdown-body">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeHighlight]}
+                  >
+                    {advice}
+                  </ReactMarkdown>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-green-200">
+                <Button
+                  onClick={() => setShowAdvice(false)}
+                  variant="outline"
+                  size="sm"
+                  className="text-green-700 border-green-300 hover:bg-green-100"
+                >
+                  Close
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
