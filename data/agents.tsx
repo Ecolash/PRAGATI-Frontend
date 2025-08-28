@@ -11,6 +11,7 @@ import {
   Shield,
   Landmark,
   LightbulbIcon,
+  Search,
 } from "lucide-react";
 import { AgricultureAgent } from "@/types/agriculture";
 
@@ -123,13 +124,13 @@ export const agricultureAgents: AgricultureAgent[] = [
     color: "text-rose-600",
     mode: "agent",
   },
-  // {
-  //   id: "deep-research",
-  //   name: "Deep Research",
-  //   description: "Advanced agricultural research and insights",
-  //   icon: <Search className="h-4 w-4" />,
-  //   category: "research",
-  //   color: "text-gray-700",
-  //   mode: "agent",
-  // },
+  {
+    id: "deep-research",
+    name: "Deep Research",
+    description: "Advanced agricultural research and insights",
+    icon: <Search className="h-4 w-4" />,
+    category: "research",
+    color: "text-gray-700",
+    mode: "agent",
+  },
 ];

@@ -8,6 +8,8 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { AppSidebar } from "./app-sidebar";
 import { ChatMessages } from "./chat-messages";
 import { ChatInput } from "./chat-input";
@@ -21,15 +23,37 @@ import { IrrigationCalendar } from "@/components/irrigation-calendar";
 import { CropDiseaseDetection } from "@/components/crop-disease-prediction";
 import { PestPrediction } from "@/components/pest-prediction";
 import { Switch } from "./ui/switch";
-import { Bot, Wrench } from "lucide-react";
+import {
+  Bot,
+  Wrench,
+  Search,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+  Clock,
+  TrendingUp,
+} from "lucide-react";
 import { WeatherForecast } from "@/components/weather-forecast";
 import { CropYieldPredictor } from "@/components/crop-yield-predictor";
 import { AgriculturalNewsFeed } from "@/components/agricultural-news-feed";
 import { APIHealthCheck } from "@/components/api-health-check";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+import "highlight.js/styles/github.css";
 import { buildPromptWithUserContext } from "@/lib/utils";
 import { getUser } from "@/lib/actions/getUser";
 import { Turnstile } from "@marsidev/react-turnstile";
-import {PersonalizationPage} from "@/components/personalised-section";
+import { PersonalizationPage } from "@/components/personalised-section";
 
 type UserType = {
   id: string;
@@ -679,51 +703,42 @@ export default function AgriculturalAIChatbot() {
             },
           };
         } else if (agentMode && currentSession?.agent?.id === "deep-research") {
-          // Use specialized workflow agent for deep research
-          const currentToolsEnabled = toolsEnabledRef.current;
-          const mode = currentToolsEnabled ? "tooling" : "rag";
-          console.log(
-            `Using workflow agent for deep research in ${mode} mode (tools ${currentToolsEnabled ? "enabled" : "disabled"})`
-          );
-          const prompt = await buildPromptWithUserContext(
-            content,
-            user?.fullName || "Farmer"
-          );
-          const agentResponse = await agriculturalAPI.getWorkflowAgent({
-            query: prompt,
-            mode: mode,
-            image: files?.[0],
+          // Use dedicated deep research API
+          console.log("Using dedicated deep research API");
+
+          const deepResearchResponse = await agriculturalAPI.getDeepResearch({
+            query: content,
+            response_format: "detailed", // Use detailed format by default
+            max_iterations: 3,
           });
 
-          let formattedResponse = agentResponse.success
-            ? "Here's what I found through deep research:\n\n"
-            : `Research error: ${agentResponse.error || "Unknown error occurred"}\n\n`;
+          let formattedResponse = deepResearchResponse.success
+            ? "Here's your comprehensive agricultural research:\n\n"
+            : `Research error: ${deepResearchResponse.metadata?.error || "Unknown error occurred"}\n\n`;
 
-          if (agentResponse.success && agentResponse.response) {
-            // Clean the response to remove chart path references since we'll display charts visually
-            let cleanedResponse = agentResponse.response;
-            if (agentResponse.chart_path) {
-              // Remove any mentions of chart file paths from the response
-              cleanedResponse = cleanedResponse.replace(
-                /Chart available at:.*$/gm,
-                ""
-              );
-              cleanedResponse = cleanedResponse.replace(
-                /The attached chart.*$/gm,
-                ""
-              );
-              cleanedResponse = cleanedResponse.trim();
+          if (deepResearchResponse.success) {
+            formattedResponse += deepResearchResponse.response;
+
+            // Add metadata information
+            if (deepResearchResponse.metadata) {
+              const meta = deepResearchResponse.metadata;
+              formattedResponse += "\n\n---\n**Research Details:**\n";
+
+              if (meta.execution_id) {
+                formattedResponse += `🔍 **Execution ID:** ${meta.execution_id}\n`;
+              }
+              if (meta.total_agents) {
+                formattedResponse += `🤖 **Agents Used:** ${meta.total_agents}\n`;
+              }
+              if (meta.success_rate) {
+                formattedResponse += `✅ **Success Rate:** ${meta.success_rate}\n`;
+              }
+              if (meta.tools_used && meta.tools_used.length > 0) {
+                formattedResponse += `�️ **Tools:** ${meta.tools_used.join(", ")}\n`;
+              }
             }
 
-            formattedResponse += cleanedResponse;
-
-            if (agentResponse.answer_quality_grade) {
-              formattedResponse += `\n\n📊 **Answer Quality Score:** ${JSON.stringify(agentResponse.answer_quality_grade)}`;
-            }
-
-            if (agentResponse.processing_time) {
-              formattedResponse += `\n⏱️ **Processing Time:** ${agentResponse.processing_time.toFixed(2)}s`;
-            }
+            formattedResponse += `⏱️ **Processing Time:** ${deepResearchResponse.execution_time_seconds.toFixed(2)}s`;
           }
 
           assistantMessage = {
@@ -734,17 +749,13 @@ export default function AgriculturalAIChatbot() {
             language: selectedLanguage,
             metadata: {
               agent_type: "deep-research",
-              success: agentResponse.success,
-              answer_quality_grade: agentResponse.answer_quality_grade,
-              processing_time: agentResponse.processing_time,
-              mode: mode,
-              error: agentResponse.error,
-              chart_path: agentResponse.chart_path,
-              chart_extra_message: agentResponse.chart_extra_message,
-              is_answer_complete: agentResponse.is_answer_complete,
-              final_mode: agentResponse.final_mode,
-              switched_modes: agentResponse.switched_modes,
-              is_image_query: agentResponse.is_image_query,
+              success: deepResearchResponse.success,
+              processing_time: deepResearchResponse.execution_time_seconds,
+              final_mode: "deep-research",
+              switched_modes: false,
+              is_answer_complete: deepResearchResponse.success,
+              is_image_query: false,
+              error: deepResearchResponse.metadata?.error,
             },
           };
         } else {
@@ -971,6 +982,304 @@ export default function AgriculturalAIChatbot() {
       );
     }
 
+    // Deep Research Component (inline)
+    if (currentSession.agent.id === "deep-research") {
+      const [deepQuery, setDeepQuery] = useState("");
+      const [responseFormat, setResponseFormat] = useState<
+        "simple" | "detailed" | "executive"
+      >("detailed");
+      const [maxIterations, setMaxIterations] = useState(3);
+      const [deepIsLoading, setDeepIsLoading] = useState(false);
+      const [deepResult, setDeepResult] = useState<any>(null);
+      const [deepError, setDeepError] = useState("");
+
+      const handleDeepSubmit = async () => {
+        if (!deepQuery.trim()) {
+          setDeepError("Please enter a research query");
+          return;
+        }
+
+        if (deepQuery.length < 10) {
+          setDeepError(
+            "Please provide a more detailed query (at least 10 characters)"
+          );
+          return;
+        }
+
+        setDeepIsLoading(true);
+        setDeepError("");
+        setDeepResult(null);
+
+        try {
+          const request = {
+            query: deepQuery.trim(),
+            response_format: responseFormat,
+            max_iterations: maxIterations,
+          };
+
+          const response = await agriculturalAPI.getDeepResearch(request);
+          setDeepResult(response);
+        } catch (error) {
+          console.error("Error conducting deep research:", error);
+          setDeepError(
+            error instanceof Error
+              ? error.message
+              : "Failed to conduct research. Please try again."
+          );
+        } finally {
+          setDeepIsLoading(false);
+        }
+      };
+
+      const resetDeepForm = () => {
+        setDeepQuery("");
+        setDeepResult(null);
+        setDeepError("");
+      };
+
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-slate-50 to-gray-100 p-3">
+          <div className="max-w-4xl mx-auto space-y-4">
+            <div className="text-center space-y-2">
+              <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-gray-600 to-slate-700 rounded-full shadow-lg">
+                <Search className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-700 to-slate-800 bg-clip-text text-transparent">
+                  Deep Agricultural Research
+                </h1>
+                <p className="text-sm text-gray-600">
+                  Comprehensive AI-powered agricultural research and analysis
+                </p>
+              </div>
+            </div>
+
+            <Card className="border-gray-200 shadow-md">
+              <CardHeader className="bg-gradient-to-r from-gray-600 to-slate-700 text-white rounded-t-lg py-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Search className="w-4 h-4" />
+                  Research Query
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-4">
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="query"
+                    className="text-gray-700 font-medium text-sm"
+                  >
+                    Research Question
+                  </Label>
+                  <Textarea
+                    id="query"
+                    value={deepQuery}
+                    onChange={(e) => setDeepQuery(e.target.value)}
+                    placeholder="Enter your detailed agricultural research question (e.g., 'I want to grow tomatoes in my farm, need fertilizer recommendations and market prices')"
+                    className="border-gray-200 focus:border-gray-500 focus:ring-gray-500 min-h-[100px] text-sm"
+                    maxLength={1000}
+                  />
+                  <p className="text-xs text-gray-500">
+                    {deepQuery.length}/1000 characters (minimum 10 required)
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-gray-700 font-medium text-sm">
+                      Response Format
+                    </Label>
+                    <Select
+                      value={responseFormat}
+                      onValueChange={(value: any) => setResponseFormat(value)}
+                    >
+                      <SelectTrigger className="border-gray-200 focus:border-gray-500 focus:ring-gray-500 h-8 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="simple">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span>
+                              Simple - Quick actionable recommendations
+                            </span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="detailed">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <span>Detailed - Comprehensive analysis</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="executive">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                            <span>Executive - High-level summary</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-gray-700 font-medium text-sm">
+                      Research Depth (Iterations)
+                    </Label>
+                    <Select
+                      value={maxIterations.toString()}
+                      onValueChange={(value) =>
+                        setMaxIterations(parseInt(value))
+                      }
+                    >
+                      <SelectTrigger className="border-gray-200 focus:border-gray-500 focus:ring-gray-500 h-8 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 - Basic research</SelectItem>
+                        <SelectItem value="2">2 - Standard research</SelectItem>
+                        <SelectItem value="3">
+                          3 - Deep research (recommended)
+                        </SelectItem>
+                        <SelectItem value="4">4 - Thorough research</SelectItem>
+                        <SelectItem value="5">
+                          5 - Comprehensive research
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleDeepSubmit}
+                    disabled={deepIsLoading || deepQuery.length < 10}
+                    className="bg-gradient-to-r from-gray-600 to-slate-700 hover:from-gray-700 hover:to-slate-800 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {deepIsLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Researching...
+                      </>
+                    ) : (
+                      <>
+                        <Search className="w-4 h-4 mr-2" />
+                        Start Research
+                      </>
+                    )}
+                  </Button>
+
+                  {deepResult && (
+                    <Button
+                      onClick={resetDeepForm}
+                      variant="outline"
+                      className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                    >
+                      New Research
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Error Display */}
+            {deepError && (
+              <Card className="border-red-200 bg-red-50">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-red-700">
+                    <AlertCircle className="w-5 h-5" />
+                    <span className="font-medium">Error</span>
+                  </div>
+                  <p className="text-red-600 mt-2">{deepError}</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Results Display */}
+            {deepResult && (
+              <Card className="border-gray-200 bg-white">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-gray-800 flex items-center gap-2">
+                    {deepResult.success ? (
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <AlertCircle className="w-5 h-5 text-red-600" />
+                    )}
+                    Research Results
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0 space-y-4">
+                  {/* Research Metadata */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-gray-600" />
+                      <span className="text-sm text-gray-700">
+                        {deepResult.execution_time_seconds?.toFixed(2)}s
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-gray-600" />
+                      <span className="text-sm text-gray-700">
+                        {deepResult.response_format} format
+                      </span>
+                    </div>
+                    {deepResult.metadata?.success_rate && (
+                      <div className="flex items-center gap-2">
+                        <Bot className="w-4 h-4 text-gray-600" />
+                        <span className="text-sm text-gray-700">
+                          {deepResult.metadata.success_rate} success
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Main Response */}
+                  <div className="prose prose-sm max-w-none text-gray-700">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeHighlight]}
+                    >
+                      {deepResult.response}
+                    </ReactMarkdown>
+                  </div>
+
+                  {/* Additional Metadata */}
+                  {deepResult.metadata &&
+                    Object.keys(deepResult.metadata).length > 0 && (
+                      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">
+                          Research Details
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-600">
+                          {deepResult.metadata.total_agents && (
+                            <div>
+                              Agents Used: {deepResult.metadata.total_agents}
+                            </div>
+                          )}
+                          {deepResult.metadata.tools_used &&
+                            deepResult.metadata.tools_used.length > 0 && (
+                              <div>
+                                Tools:{" "}
+                                {deepResult.metadata.tools_used.join(", ")}
+                              </div>
+                            )}
+                          {deepResult.metadata.iterations_completed && (
+                            <div>
+                              Iterations:{" "}
+                              {deepResult.metadata.iterations_completed}
+                            </div>
+                          )}
+                          {deepResult.metadata.execution_id && (
+                            <div>ID: {deepResult.metadata.execution_id}</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     // Otherwise show the tool interface
     switch (currentSession.agent.id) {
       case "crop-yield":
@@ -986,7 +1295,7 @@ export default function AgriculturalAIChatbot() {
       case "crop-health":
         return <CropDiseaseDetection />;
       case "personalised-section":
-          return <PersonalizationPage />;
+        return <PersonalizationPage />;
       case "pest-prediction":
         return <PestPrediction />;
       case "price-forecasting":

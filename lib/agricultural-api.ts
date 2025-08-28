@@ -175,6 +175,50 @@ export interface CreditPolicyMarketAgentResponse {
   error?: string;
 }
 
+export interface PersonalizedAdviceRequest {
+  user_location: string;
+  preferred_language: string;
+  crops: string[];
+  total_land_area: number;
+  season: string;
+  farming_type: string;
+  irrigation: string;
+  budget: string;
+  experience: string;
+}
+
+export interface PersonalizedAdviceResponse {
+  answer: string;
+}
+
+export interface DeepResearchRequest {
+  query: string;
+  response_format?: "simple" | "detailed" | "executive";
+  max_iterations?: number;
+}
+
+export interface DeepResearchResponse {
+  success: boolean;
+  query: string;
+  response: string;
+  execution_time_seconds: number;
+  response_format: string;
+  metadata?: {
+    execution_id?: string;
+    total_agents?: number;
+    successful_agents?: number;
+    high_quality_responses?: number;
+    iterations_completed?: number;
+    tools_used?: string[];
+    success_rate?: string;
+    total_agents_used?: number;
+    successful_responses?: number;
+    tools_utilized?: string[];
+    error?: string;
+    error_type?: string;
+  };
+}
+
 export interface CropRecommendationRequest {
   N: number;
   P: number;
@@ -1343,6 +1387,89 @@ class AgriculturalAPIService {
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
       };
+    }
+  }
+
+  // New method for personalized advice
+  async getPersonalizedAdvice(
+    request: PersonalizedAdviceRequest
+  ): Promise<PersonalizedAdviceResponse> {
+    try {
+      console.log("=== PERSONALIZED ADVICE DEBUG ===");
+      console.log("Request:", request);
+
+      const response = await fetch(
+        `${config.apiUrl}/api/v1/personalised-advice`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(request),
+        }
+      );
+
+      console.log("Response Status:", response.status);
+      console.log("Response OK:", response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error Response Body:", errorText);
+        throw new Error(
+          `Personalized advice failed: ${response.status} - ${errorText}`
+        );
+      }
+
+      const data = await response.json();
+      console.log("API Response:", data);
+
+      return {
+        answer: data.answer || "No advice available",
+      };
+    } catch (error) {
+      console.error("Error calling personalized advice:", error);
+      throw new Error(
+        `Failed to get personalized advice: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+    }
+  }
+
+  // New method for deep research
+  async getDeepResearch(
+    request: DeepResearchRequest
+  ): Promise<DeepResearchResponse> {
+    try {
+      console.log("=== DEEP RESEARCH DEBUG ===");
+      console.log("Request:", request);
+
+      const response = await fetch(`${config.apiUrl}/api/deep-research/ask`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(request),
+      });
+
+      console.log("Response Status:", response.status);
+      console.log("Response OK:", response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error Response Body:", errorText);
+        throw new Error(
+          `Deep research failed: ${response.status} - ${errorText}`
+        );
+      }
+
+      const data = await response.json();
+      console.log("API Response:", data);
+
+      return data;
+    } catch (error) {
+      console.error("Error calling deep research:", error);
+      throw new Error(
+        `Failed to get deep research: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
     }
   }
 }
